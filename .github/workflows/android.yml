@@ -1,42 +1,106 @@
-name: Build Android APK
+import random
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
 
-on:
-  push:
-    branches: [ main, master ]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+class MatrixDashcamLayout(FloatLayout):
 
-    steps:
-    - uses: actions/checkout@v4
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+    # Zeichen für den Matrix-Regen im Hintergrund
+    self.chars = '0110100101010101ABCDEFXYZ$#@&*'
+    self.columns = []
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade setuptools wheel
-        pip install --upgrade cython buildozer
+    # 1. Unterste Ebene: Canvas für den Matrix-Hintergrund auf dem ganzen Bildschirm
+    with self.canvas.before:
+      self.bg_color = Color(0, 0, 0, 1)  # Kompletter schwarzer Hintergrund
+      self.bg_rect = Rectangle(size=Window.size, pos=(0, 0))
 
-    - name: Install system dependencies for Buildozer
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk autoconf libtool \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            libsqlite3-dev libssl-dev libgdbm-dev liblzma-dev \
-            build-essential libffi-dev
+    # Fenstergröße-Änderungen überwachen
+    Window.bind(on_resize=self.update_rect)
 
-    - name: Build with Buildozer
-      run: |
-        buildozer -v android debug
+    # Zufällige Sparten für den Code-Regen generieren
+    for _ in range(50):
+      self.columns.append({
+          'x': random.randint(0, int(Window.width)),
+          'y': random.randint(0, int(Window.height)),
+          'text': random.choice(self.chars),
+      })
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: package
-        path: bin/*.apk
+    # 2. Obere Ebene: Das schwebende Fenster für die Dashcam / Kamera
+    # size_hint steuert die Größe (z.B. 85% breit, 55% hoch), pos_hint zentriert es
+    self.dashcam_box = BoxLayout(
+        orientation='vertical',
+        size_hint=(0.85, 0.55),
+        pos_hint={'center_x': 0.5, 'center_y': 0.5},
+        padding=15,
+    )
+
+    with self.dashcam_box.canvas.before:
+      # Dunkler, leicht transparenter Rahmen für das Dashcam-Fenster
+      Color(0, 0.1, 0, 0.85)
+      self.cam_rect = Rectangle(
+          size=self.dashcam_box.size, pos=self.dashcam_box.pos
+      )
+
+    self.dashcam_box.bind(
+        pos=self.update_cam_rect, size=self.update_cam_rect
+    )
+
+    # Inhalt des Dashcam-Fensters (hier kannst du später deine Kamera einbauen)
+    self.cam_label = Label(
+        text='[b]ATLAS - DASHCAM FEED[/b]\n(Wartet auf Live-Stream...)',
+        markup=True,
+        color=(0, 1, 0, 1),
+        font_size='18sp',
+        halign='center',
+    )
+    self.dashcam_box.add_widget(self.cam_label)
+
+    # Das Dashcam-Fenster über die Matrix legen
+    self.add_widget(self.dashcam_box)
+
+    # Animation für den Matrix-Hintergrund starten (alle 0.1 Sekunden)
+    Clock.schedule_interval(self.update_matrix, 0.1)
+
+  def update_rect(self, *args):
+    self.bg_rect.size = Window.size
+    self.bg_rect.pos = (0, 0)
+
+  def update_cam_rect(self, instance, value):
+    self.cam_rect.pos = instance.pos
+    self.cam_rect.size = instance.size
+
+  def update_matrix(self, dt):
+    # Hier wird der Hintergrund bei jedem Tick neu gezeichnet
+    self.canvas.before.clear()
+
+    with self.canvas.before:
+      # Hintergrund schwarz halten
+      Color(0, 0, 0, 1)
+      Rectangle(size=Window.size, pos=(0, 0))
+
+      # Matrix-Regen zeichnen
+      Color(0, 0.85, 0, 0.6)  # Leuchtendes Matrix-Grün
+      for col in self.columns:
+        col['y'] -= 20  # Geschwindigkeit des Herabfallens
+        if col['y'] < 0:
+          col['y'] = Window.height
+          col['x'] = random.randint(0, int(Window.width))
+          col['text'] = random.choice(self.chars)
+
+
+class AtlasApp(App):
+
+  def build(self):
+    return MatrixDashcamLayout()
+
+
+if __name__ == '__main__':
+  AtlasApp().run()
