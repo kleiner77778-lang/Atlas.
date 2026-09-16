@@ -2,6 +2,7 @@
 
 # (str) Title of your application
 title = Atlas
+version = 0.1
 
 # (str) Package name
 package.name = atlas
