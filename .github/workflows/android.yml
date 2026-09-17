@@ -7,7 +7,6 @@ on:
       - master
   workflow_dispatch:
 
-# Explizite System-Genehmigungen gegen Rechte-Abbrüche (403 Forbidden)
 permissions:
   contents: read
   actions: write
@@ -27,7 +26,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
