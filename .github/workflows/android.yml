@@ -31,8 +31,9 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Clean Build Cache (Fix for Out-of-Memory / Stale Tokens)
+      - name: Clean Conflicting Build Caches
         run: |
+          rm -rf .buildozer/android/platform/build-arm64-v8a_armeabi-v7a
           rm -rf ~/.buildozer/android/platform/build-python-install
           rm -rf ~/.buildozer/cache
 
