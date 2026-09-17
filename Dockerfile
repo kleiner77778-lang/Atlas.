@@ -11,9 +11,8 @@ RUN apt-get update && apt-get install -y \
     libltdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Eigenen Nicht-Root-Benutzer 'builder' anlegen
-RUN groupadd -g 1000 builder && \
-    useradd -m -u 1000 -g builder -s /bin/bash builder
+# Benutzer ohne feste UID/GID anlegen
+RUN useradd -m -s /bin/bash builder
 
 USER builder
 WORKDIR /home/builder/app
