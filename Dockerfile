@@ -9,16 +9,14 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libffi-dev \
     libltdl-dev \
-    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Benutzer 'user' sauber anlegen
-RUN useradd -m -u 1000 -s /bin/bash user && \
-    echo "user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Standardbenutzer und Arbeitsverzeichnis setzen
-USER user
+# Arbeitsverzeichnis im bestehenden Home-Ordner von 'user' anlegen und Rechte vergeben
 WORKDIR /home/user/app
+RUN chown -R user:user /home/user/app
+
+# Auf den bereits existierenden Nicht-Root-Benutzer 'user' wechseln
+USER user
 
 COPY --chown=user:user . .
 
