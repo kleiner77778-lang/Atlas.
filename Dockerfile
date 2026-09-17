@@ -1,6 +1,7 @@
 FROM kivy/buildozer:latest
 
 USER root
+
 RUN apt-get update && apt-get install -y \
     autoconf \
     libtool \
@@ -9,9 +10,8 @@ RUN apt-get update && apt-get install -y \
     libltdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-USER kivy
-WORKDIR /home/kivy/app
+WORKDIR /app
 
-COPY --chown=kivy:kivy . .
+COPY . .
 
 RUN buildozer --version
