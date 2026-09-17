@@ -32,18 +32,21 @@ jobs:
             libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev \
             libdb5.3-dev libgdbm-dev zip unzip ccache git autoconf libtool pkg-config
 
-      - name: Install Buildozer & Cython
+      - name: Install Buildozer & Tools
         run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33
+          pip install --upgrade pip setuptools
+          pip install Cython==0.29.33
+          pip install buildozer
 
-      - name: Clean Old Build Cache
+      - name: Clean Cache
         run: |
           rm -rf .buildozer
           rm -rf ~/.buildozer/cache
 
       - name: Build with Buildozer
         timeout-minutes: 60
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
         run: |
           buildozer android debug
 
