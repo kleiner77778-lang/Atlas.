@@ -38,11 +38,12 @@ jobs:
           pip install Cython==0.29.33
           pip install buildozer
 
-      - name: Clean Build & libffi Cache
+      - name: Force Clean and Patch libffi Autotools
         run: |
           rm -rf .buildozer
-          rm -rf ~/.buildozer/cache
-          rm -rf ~/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi
+          rm -rf ~/.buildozer
+          export ACLOCAL_PATH="/usr/share/aclocal"
+          echo "ACLOCAL_PATH=/usr/share/aclocal" >> $GITHUB_ENV
 
       - name: Build with Buildozer
         timeout-minutes: 60
