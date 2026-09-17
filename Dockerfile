@@ -11,13 +11,11 @@ RUN apt-get update && apt-get install -y \
     libltdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Arbeitsverzeichnis im bestehenden Home-Ordner von 'user' anlegen und Rechte vergeben
-WORKDIR /home/user/app
-RUN chown -R user:user /home/user/app
-
-# Auf den bereits existierenden Nicht-Root-Benutzer 'user' wechseln
+# Direkt auf den bestehenden Benutzer wechseln und Arbeitsverzeichnis setzen
 USER user
+WORKDIR /home/user/app
 
-COPY --chown=user:user . .
+# Dateien als Benutzer kopieren
+COPY --chown=user . .
 
 RUN buildozer --version
