@@ -25,7 +25,14 @@ jobs:
           sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev \
             zlib1g-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev \
             libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev \
-            libdb5.3-dev zip unzip ccache git autoconf libtool pkg-config automake gettext
+            libdb5.3-dev zip unzip ccache git autoconf libtool pkg-config automake gettext \
+            libtool-bin m4
+
+      - name: Patch Autotools Macro Path
+        run: |
+          sudo mkdir -p /usr/share/aclocal
+          sudo cp -r /usr/share/aclocal*/* /usr/share/aclocal/ 2>/dev/null || true
+          echo "ACLOCAL_PATH=/usr/share/aclocal" >> $GITHUB_ENV
 
       - name: Install Buildozer & Tools
         run: |
@@ -42,6 +49,7 @@ jobs:
         timeout-minutes: 60
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+          ACLOCAL_PATH: /usr/share/aclocal
         run: |
           buildozer android debug
 
