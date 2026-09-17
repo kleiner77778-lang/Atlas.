@@ -13,6 +13,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Set up Java 17 (Required for Android SDK/Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,10 +37,9 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Clean Conflicting Build Caches
+      - name: Complete Build Clean (Wipe Stale Artifacts)
         run: |
-          rm -rf .buildozer/android/platform/build-arm64-v8a_armeabi-v7a
-          rm -rf ~/.buildozer/android/platform/build-python-install
+          rm -rf .buildozer
           rm -rf ~/.buildozer/cache
 
       - name: Build with Buildozer
