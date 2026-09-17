@@ -22,8 +22,7 @@ jobs:
         run: |
           docker build -t my-buildozer-env .
           docker run --rm \
-            --user user \
-            -v ${{ github.workspace }}:/home/user/app \
+            -v ${{ github.workspace }}:/home/builder/app \
             my-buildozer-env \
             buildozer android debug
 
