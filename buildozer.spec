@@ -1,13 +1,16 @@
 [app]
 
-# (PA) Title of your application
+# (str) Title of your application
 title = Atlas
 
-# (PA) Package name
+# (str) Package name
 package.name = atlas
 
-# (PA) Package domain (needed for android/ios packaging)
+# (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
+
+# (str) Application versioning
+version = 0.1
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -19,19 +22,6 @@ source.include_exts = py,png,jpg,kv,atlas
 # comma separated e.g. requirements = sqlite3,kivy
 requirements = python3,kivy==2.2.1
 
-# (str) Custom source folders for requirements
-# Sets custom source for any requirement with recipes
-# requirements.source.kivy = ../kivy
-
-# (list) Garden requirements
-#garden_requirements =
-
-# (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
-
-# (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
-
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
 
@@ -39,7 +29,7 @@ orientation = portrait
 fullscreen = 0
 
 # (list) Permissions
-#android.permissions = INTERNET
+android.permissions = INTERNET
 
 # (int) Target Android API, should be as high as possible.
 android.api = 33
@@ -50,26 +40,13 @@ android.minapi = 21
 # (str) Android NDK version to use
 android.ndk = 25b
 
-# (bool) Use --private data storage (True) or --dir public storage (False)
-#android.private_storage = True
-
-# (str) Android NDK directory (if empty, it will be automatically downloaded.)
-#android.ndk_path =
-
-# (str) Android SDK directory (if empty, it will be automatically downloaded.)
-#android.sdk_path =
-
-# (str) ANT directory (if empty, it will be automatically downloaded.)
-#android.ant_path =
-
 # (bool) Accept SDK license automatically
 android.accept_sdk_license = True
 
-# (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-# Nur 64-Bit aktivieren (verhindert den "pythonforandroid.toolchain create" Crash):
+# (list) The Android archs to build for (Nur 64-Bit verhindert Toolchain-Konflikte):
 android.archs = arm64-v8a
 
-# (int) Begrenzt die Threads beim Bauen (verhindert Out-Of-Memory/Timeouts bei autoconf):
+# (int) Begrenzt die Threads beim Bauen (verhindert RAM-Mangel/Timeouts):
 android.num_build_threads = 2
 
 [buildozer]
