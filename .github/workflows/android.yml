@@ -7,6 +7,12 @@ on:
       - master
   workflow_dispatch:
 
+# Explizite System-Genehmigungen gegen Rechte-Abbrüche (403 Forbidden)
+permissions:
+  contents: read
+  actions: write
+  checks: write
+
 jobs:
   build:
     name: Build APK
