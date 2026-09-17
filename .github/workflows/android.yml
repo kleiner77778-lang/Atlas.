@@ -22,7 +22,8 @@ jobs:
         run: |
           docker build -t my-buildozer-env .
           docker run --rm \
-            -v ${{ github.workspace }}:/home/kivy/app \
+            --user user \
+            -v ${{ github.workspace }}:/home/user/app \
             my-buildozer-env \
             buildozer android debug
 
