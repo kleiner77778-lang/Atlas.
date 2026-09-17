@@ -24,13 +24,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install System Dependencies (Latest Autotools)
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev \
             zlib1g-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev \
             libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev \
-            libdb5.3-dev libgdbm-dev zip unzip ccache git autoconf libtool pkg-config automake
+            libdb5.3-dev zip unzip ccache git autoconf libtool pkg-config automake gettext
 
       - name: Install Buildozer & Tools
         run: |
@@ -38,10 +38,11 @@ jobs:
           pip install Cython==0.29.33
           pip install buildozer
 
-      - name: Clean Cache
+      - name: Clean Build & libffi Cache
         run: |
           rm -rf .buildozer
           rm -rf ~/.buildozer/cache
+          rm -rf ~/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi
 
       - name: Build with Buildozer
         timeout-minutes: 60
