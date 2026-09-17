@@ -11,8 +11,12 @@ RUN apt-get update && apt-get install -y \
     libltdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Benutzer ohne feste UID/GID anlegen
-RUN useradd -m -s /bin/bash builder
+# Alte 'user'-Einträge entfernen und 'builder' mit UID 1000 neu anlegen
+RUN touch /etc/subuid /etc/subgid && \
+    userdel -r user 2>/dev/null || true && \
+    groupadd -g 1000 builder && \
+    useradd -m -u 1000 -g builder -s /bin/bash builder && \
+    chown -R builder:builder /home/builder
 
 USER builder
 WORKDIR /home/builder/app
