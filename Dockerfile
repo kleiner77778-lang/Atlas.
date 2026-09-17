@@ -11,11 +11,13 @@ RUN apt-get update && apt-get install -y \
     libltdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Direkt auf den bestehenden Benutzer wechseln und Arbeitsverzeichnis setzen
-USER user
-WORKDIR /home/user/app
+# Eigenen Nicht-Root-Benutzer 'builder' anlegen
+RUN groupadd -g 1000 builder && \
+    useradd -m -u 1000 -g builder -s /bin/bash builder
 
-# Dateien als Benutzer kopieren
-COPY --chown=user . .
+USER builder
+WORKDIR /home/builder/app
+
+COPY --chown=builder:builder . .
 
 RUN buildozer --version
