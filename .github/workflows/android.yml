@@ -1,25 +1,34 @@
+name: Build Android APK via Docker
+
 on:
-push:
-branches: [ main, master ]
-workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
 permissions:
-contents: read
-actions: write
-checks: write
+  contents: read
+  actions: write
+  checks: write
+
 jobs:
-build:
-runs-on: ubuntu-lateststeps:
- - name: Checkout Code
- uses: actions/checkout@v4
- - name: Build APK in Docker Container
- run: |
- docker build -t my-buildozer-env .
- docker run --rm \
- -v ${{ github.workspace }}:/home/kivy/app \
- my-buildozer-env \
- buildozer android debug
- - name: Upload APK Artifact uses: actions/upload-artifact@v4
- with:
- name: package-apk
- path: bin/*.apk
- if-no-files-found: error
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build APK in Docker Container
+        run: |
+          docker build -t my-buildozer-env .
+          docker run --rm \
+            -v ${{ github.workspace }}:/home/kivy/app \
+            my-buildozer-env \
+            buildozer android debug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-apk
+          path: bin/*.apk
+          if-no-files-found: error
