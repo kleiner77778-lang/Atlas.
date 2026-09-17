@@ -50,6 +50,11 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
         run: |
+          if [ -d "$HOME/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi" ]; then
+             cd $HOME/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/src/* || true
+             autoreconf -fiv || true
+             cd - || true
+          fi
           buildozer android debug
 
       - name: Upload APK Artifact
