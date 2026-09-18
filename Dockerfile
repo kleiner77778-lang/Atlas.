@@ -2,7 +2,6 @@ FROM kivy/buildozer:latest
 
 USER root
 
-# Systempakete installieren
 RUN apt-get update && apt-get install -y \
     autoconf \
     libtool \
@@ -15,4 +14,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN buildozer --version
+# Verhindert jegliche interaktive Prompts
+ENV BUILDOZER_ALLOW_ROOT=1
+ENV CI=1
