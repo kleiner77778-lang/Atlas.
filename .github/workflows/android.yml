@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -24,35 +24,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies & Buildozer
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev zip unzip
           pip install --upgrade pip
-          pip install "setuptools<60.0.0" "cython==0.29.33" buildozer
+          pip install "cython==0.29.33" buildozer
 
-      - name: Pre-setup Buildozer SDK & Symlink Tools
+      - name: Accept Licenses & Build APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
-          # SDK-Ordner anlegen
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-
-          # Lizenzen schreiben
-          echo -e "\n24833b713b37023e86477308d7d9879c978e0952\nd58f57301b1fe3fc24f21e116637c77170259f7e\n2c4441b9ae29f9742676e86eaa6083d5a77f69a8" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0d03d25293527e37000d18377731664" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-
-          # SDK Komponenten installieren
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "build-tools;33.0.2" "platforms;android-33" "platform-tools" "cmdline-tools;latest" || true
-
-          # Symlink erstellen, damit Buildozer den sdkmanager unter 'tools/bin' findet
-          cd ~/.buildozer/android/platform/android-sdk
-          mkdir -p tools
-          ln -sf $ANDROID_HOME/cmdline-tools/latest/bin tools/bin
-
-      - name: Build APK with Buildozer
-        run: |
+          # Lizenzen im System-SDK akzeptieren
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # Buildozer ausführen (nutzt das vorbereitete System-SDK)
           buildozer android debug
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: package-apk
