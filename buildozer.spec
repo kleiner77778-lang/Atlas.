@@ -1,3 +1,10 @@
+[app]
+
+# (str) Title of your application
+title = My Application
+
+# ... weitere Einstellungen ...
+
 # (Android) NDK version to use
 android.ndk = 25b
 
