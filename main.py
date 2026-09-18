@@ -3,7 +3,7 @@ from kivy.uix.label import Label
 
 class TestApp(App):
     def build(self):
-        return Label(text="Hello Atlas")
+        return Label(text='Build Test OK')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     TestApp().run()
