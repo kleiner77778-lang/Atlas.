@@ -19,7 +19,6 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # (list) Application requirements
-# WICHTIG: Explicit python3==3.10.12 verhindert den Python 3.14 / cgi Fehler
 requirements = python3==3.10.12,kivy
 
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
@@ -28,10 +27,7 @@ orientation = portrait
 # (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
-# (list) Permissions
-# android.permissions = INTERNET
-
-# (int) Target Android API, should be as high as possible.
+# (int) Target Android API
 android.api = 33
 
 # (int) Minimum API your APK will support.
@@ -39,6 +35,9 @@ android.minapi = 21
 
 # (str) Android NDK version to use
 android.ndk = 25b
+
+# (str) Android Build Tools version to use
+android.build_tools_version = 33.0.2
 
 # (bool) Use --private data dir (True), or --dir public storage (False)
 android.private_storage = True
