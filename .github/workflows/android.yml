@@ -24,9 +24,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -34,9 +31,15 @@ jobs:
           pip install --upgrade pip
           pip install "setuptools<60.0.0" "cython==0.29.33" buildozer
 
-      - name: Accept Android SDK Licenses
+      - name: Pre-accept System Android SDK Licenses
         run: |
-          yes | sdkmanager --licenses || true
+          # Akzeptiert vorab alle Lizenzen im System-Android-SDK des GitHub-Runners
+          if [ -d "$ANDROID_HOME/tools/bin" ]; then
+            yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
+          fi
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          fi
 
       - name: Build APK with Buildozer
         run: |
