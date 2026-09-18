@@ -27,15 +27,19 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev zip unzip
+          sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev zip unzip wget
           pip install --upgrade pip
           pip install "setuptools<60.0.0" "cython==0.29.33" buildozer
 
-      - name: Pre-accept Android SDK Licenses
+      - name: Setup Android SDK Tools & Accept Licenses
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          echo -e "\n24833b713b37023e86477308d7d9879c978e0952\nd58f57301b1fe3fc24f21e116637c77170259f7e\n2c4441b9ae29f9742676e86eaa6083d5a77f69a8" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0d03d25293527e37000d18377731664" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9441235_latest.zip -O tools.zip
+          unzip -q tools.zip
+          mv cmdline-tools latest
+          rm tools.zip
+          yes | latest/bin/sdkmanager --licenses || true
 
       - name: Build APK with Buildozer
         run: |
