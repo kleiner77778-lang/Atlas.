@@ -1,66 +1,28 @@
 [app]
 
-# (str) Title of your application
-title = Atlas
+title = MeinApp
+package.name = meinapp
+package.domain = org.example
 
-# (str) Package name
-package.name = atlas
-
-# (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
-
-# (str) Source code where the main.py live
 source.dir = .
-
-# (list) Source files to include (let empty to include all the base dir)
 source.include_exts = py,png,jpg,kv,atlas
 
-# (str) Application versioning (method 1)
 version = 0.1
+requirements = python3,kivy
 
-# (list) Application requirements
-requirements = python3==3.10.12,kivy
-
-# (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
+osx.kivy_version = 2.2.1
 
-# (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
-# (int) Target Android API
+# Android-spezifische Konfigurationen
 android.api = 33
-
-# (int) Minimum API your APK will support.
 android.minapi = 21
-
-# (str) Android NDK version to use
 android.ndk = 25b
-
-# (str) Android Build Tools version to use
-android.build_tools_version = 33.0.2
-
-# (bool) Use --private data dir (True), or --dir public storage (False)
-android.private_storage = True
-
-# (str) Android logcat filters to use
-android.logcat_filters = *:S python:D
-
-# (bool) Copy library instead of making a libpymodules.so
-android.copy_libs = 1
-
-# (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-android.archs = arm64-v8a
-
-# (bool) accept SDK licenses automatically
-android.accept_sdk_licenses = True
-
-# (bool) enables Android auto backup feature (distribs >= 220)
-android.allow_backup = True
+android.accept_sdk_license = True
+android.archs = arm64-v8a, armeabi-v7a
 
 [buildozer]
 
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
 log_level = 2
-
-# (int) Display warning if buildozer is run as root (0 = false, 1 = true)
 warn_on_root = 1
