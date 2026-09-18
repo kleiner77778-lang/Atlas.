@@ -24,22 +24,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev zip unzip wget
+          sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev zip unzip
           pip install --upgrade pip
           pip install "setuptools<60.0.0" "cython==0.29.33" buildozer
 
-      - name: Setup Android SDK Tools & Accept Licenses
+      - name: Accept Android SDK Licenses
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9441235_latest.zip -O tools.zip
-          unzip -q tools.zip
-          mv cmdline-tools latest
-          rm tools.zip
-          yes | latest/bin/sdkmanager --licenses || true
+          yes | sdkmanager --licenses || true
 
       - name: Build APK with Buildozer
         run: |
