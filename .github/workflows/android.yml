@@ -31,10 +31,17 @@ jobs:
           pip install --upgrade pip
           pip install "setuptools<60.0.0" "cython==0.29.33" buildozer
 
-      - name: Pre-accept Android SDK Licenses
+      - name: Pre-setup Buildozer SDK & Licenses
         run: |
-          # Nutzt das integrierte SDK des Runners und akzeptiert alle Lizenzen vorab
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          # Ordnerstruktur für Buildozer erstellen
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          
+          # Lizenz-Hashes direkt im Buildozer-Ordner hinterlegen
+          echo -e "\n24833b713b37023e86477308d7d9879c978e0952\nd58f57301b1fe3fc24f21e116637c77170259f7e\n2c4441b9ae29f9742676e86eaa6083d5a77f69a8" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0d03d25293527e37000d18377731664" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+
+          # Build-Tools & Platforms explizit in den Buildozer-Ordner installieren
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "build-tools;33.0.2" "platforms;android-33" "platform-tools"
 
       - name: Build APK with Buildozer
         run: |
