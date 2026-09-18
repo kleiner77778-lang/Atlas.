@@ -51,6 +51,9 @@ android.copy_libs = 1
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 android.archs = arm64-v8a
 
+# (bool) accept SDK licenses automatically
+android.accept_sdk_licenses = True
+
 # (bool) enables Android auto backup feature (distribs >= 220)
 android.allow_backup = True
 
