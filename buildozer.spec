@@ -1,25 +1,18 @@
 [app]
 
-title = MeinApp
-package.name = meinapp
-package.domain = org.example
-
+title = Atlas E-Lkw Tracker
+package.name = elkwtracker
+package.domain = org.elkw
+source.include_exts = py,png,jpg,kv,atlas,json
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
-
-# DIESE ZEILE MUSS ENTHALTEN SEIN:
 version = 0.1
-
-requirements = python3,kivy
-
+requirements = python3,kivy,requests,urllib3,certifi,idna,charset-normalizer
 orientation = portrait
-fullscreen = 0
-
+android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION,FOREGROUND_SERVICE
 android.api = 33
-android.minapi = 21
-android.ndk = 25b
 android.accept_sdk_license = True
-android.archs = arm64-v8a, armeabi-v7a
+android.minapi = 21
+android.archs = arm64-v8a
 
 [buildozer]
 log_level = 2
