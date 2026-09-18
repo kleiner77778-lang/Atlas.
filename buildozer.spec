@@ -9,18 +9,18 @@ package.name = atlas
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
 
-# (str) Application versioning
-version = 0.1
-
 # (str) Source code where the main.py live
 source.dir = .
 
-# (list) Source files to include (let empty to include all the files)
+# (list) Source files to include (let empty to include all the base dir)
 source.include_exts = py,png,jpg,kv,atlas
 
+# (str) Application versioning (method 1)
+version = 0.1
+
 # (list) Application requirements
-# comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.2.1
+# WICHTIG: Explicit python3==3.10.12 verhindert den Python 3.14 / cgi Fehler
+requirements = python3==3.10.12,kivy
 
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
@@ -29,7 +29,7 @@ orientation = portrait
 fullscreen = 0
 
 # (list) Permissions
-android.permissions = INTERNET
+# android.permissions = INTERNET
 
 # (int) Target Android API, should be as high as possible.
 android.api = 33
@@ -40,14 +40,20 @@ android.minapi = 21
 # (str) Android NDK version to use
 android.ndk = 25b
 
-# (bool) Accept SDK license automatically
-android.accept_sdk_license = True
+# (bool) Use --private data dir (True), or --dir public storage (False)
+android.private_storage = True
 
-# (list) The Android archs to build for (Nur 64-Bit verhindert Toolchain-Konflikte):
+# (str) Android logcat filters to use
+android.logcat_filters = *:S python:D
+
+# (bool) Copy library instead of making a libpymodules.so
+android.copy_libs = 1
+
+# (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 android.archs = arm64-v8a
 
-# (int) Begrenzt die Threads beim Bauen (verhindert RAM-Mangel/Timeouts):
-android.num_build_threads = 2
+# (bool) enables Android auto backup feature (distribs >= 220)
+android.allow_backup = True
 
 [buildozer]
 
