@@ -22,9 +22,10 @@ jobs:
         run: |
           docker build -t my-buildozer-env .
           docker run --rm \
+            -e BUILDOZER_ALLOW_ROOT=1 \
             -v ${{ github.workspace }}:/app \
             my-buildozer-env \
-            buildozer android debug
+            /home/user/.venv/bin/buildozer --allow-root android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
