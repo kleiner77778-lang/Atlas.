@@ -9,6 +9,21 @@ from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
 from kivy.clock import Clock
 from kivy.core.text import Label as CoreLabel
+from kivy.utils import platform
+
+# -------------------------------------------------------------
+# ANDROID BERECHTIGUNGEN BEIM START ANFORDERN
+# -------------------------------------------------------------
+if platform == 'android':
+    try:
+        from android.permissions import request_permissions, Permission
+        request_permissions([
+            Permission.ACCESS_FINE_LOCATION,
+            Permission.ACCESS_COARSE_LOCATION,
+            Permission.FOREGROUND_SERVICE
+        ])
+    except Exception as e:
+        print(f"Fehler beim Anfordern der Android-Berechtigungen: {e}")
 
 # Plyer für Android-GPS-Hardware und Sprachausgabe
 try:
@@ -18,7 +33,7 @@ except ImportError:
     tts = None
 
 # -------------------------------------------------------------
-# TELEGRAM KONFIGURATION (Trage hier deine Daten ein!)
+# TELEGRAM KONFIGURATION
 # -------------------------------------------------------------
 TELEGRAM_BOT_TOKEN = "DEIN_BOT_TOKEN_HIER"
 TELEGRAM_CHAT_ID = "DEINE_CHAT_ID_HIER"
@@ -101,28 +116,29 @@ class AtlasApp(App):
 
         self.root_layout = FloatLayout()
 
-        # 1. Matrix Rain Hintergrund
+        # 1. Matrix Rain Animation im Hintergrund
         self.rain = MatrixRainWidget(size_hint=(1, 1))
         self.root_layout.add_widget(self.rain)
 
-        # 2. Oberes Banner
+        # 2. Oberes Status-Banner
         self.top_bar = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.08),
+            size_hint=(1, 0.12),
             pos_hint={'top': 1},
-            padding=[10, 5],
+            padding=[15, 8, 15, 8],
             spacing=10
         )
         with self.top_bar.canvas.before:
-            Color(0, 0, 0, 0.75)
+            Color(0, 0, 0, 0.88)
             self.bar_rect = Rectangle(pos=self.top_bar.pos, size=self.top_bar.size)
         self.top_bar.bind(pos=self.update_bar_rect, size=self.update_bar_rect)
 
         self.banner_label = Label(
             text="[ ATLAS: ONLINE ]",
-            font_size='14sp',
+            font_size='13sp',
             bold=True,
             color=(0, 1, 0, 1),
+            size_hint=(0.65, 1),
             halign='left',
             valign='middle'
         )
@@ -130,9 +146,9 @@ class AtlasApp(App):
 
         self.menu_btn = Button(
             text="⚙️ MENÜ",
-            size_hint=(0.3, 1),
+            size_hint=(0.35, 1),
             background_normal='',
-            background_color=(0, 0.3, 0.1, 0.9),
+            background_color=(0, 0.35, 0.1, 0.95),
             color=(0, 1, 0, 1),
             bold=True
         )
@@ -142,16 +158,16 @@ class AtlasApp(App):
         self.top_bar.add_widget(self.menu_btn)
         self.root_layout.add_widget(self.top_bar)
 
-        # 3. Hauptmenü Overlay
+        # 3. Hauptmenü Overlay (zentriert & gut lesbar)
         self.menu_overlay = BoxLayout(
             orientation='vertical',
-            size_hint=(0.9, 0.55),
+            size_hint=(0.85, 0.6),
             pos_hint={'center_x': 0.5, 'center_y': 0.45},
-            padding=20,
-            spacing=15
+            padding=[20, 15],
+            spacing=12
         )
         with self.menu_overlay.canvas.before:
-            Color(0, 0, 0, 0.88)
+            Color(0, 0, 0, 0.92)
             self.overlay_rect = Rectangle(pos=self.menu_overlay.pos, size=self.menu_overlay.size)
         self.menu_overlay.bind(pos=self.update_overlay_rect, size=self.update_overlay_rect)
 
@@ -159,38 +175,38 @@ class AtlasApp(App):
             text="GPS: SIGNAL SUCHE...",
             font_size='14sp',
             color=(0.2, 0.8, 0.2, 1),
-            size_hint=(1, 0.2)
+            size_hint=(1, 0.25)
         )
         self.menu_overlay.add_widget(self.gps_label)
 
         self.traffic_label = Label(
             text="[ STAUWARNER: INAKTIV ]",
-            font_size='16sp',
+            font_size='15sp',
             bold=True,
             color=(0, 0.8, 1, 1),
-            size_hint=(1, 0.2)
+            size_hint=(1, 0.25)
         )
         self.menu_overlay.add_widget(self.traffic_label)
 
         self.track_btn = Button(
             text="[ TRACKING STARTEN ]",
-            font_size='18sp',
+            font_size='16sp',
             bold=True,
             background_normal='',
-            background_color=(0, 0.4, 0.1, 0.9),
+            background_color=(0, 0.4, 0.1, 0.95),
             color=(0, 1, 0, 1),
-            size_hint=(1, 0.3)
+            size_hint=(1, 0.35)
         )
         self.track_btn.bind(on_press=self.toggle_tracking)
         self.menu_overlay.add_widget(self.track_btn)
 
         self.root_layout.add_widget(self.menu_overlay)
 
+        # Stauwarner-Prüfintervall
         Clock.schedule_interval(self.check_traffic, 10)
         return self.root_layout
 
     def send_telegram_async(self, text):
-        """Startet den Telegram-Versand in einem separaten Thread, damit die App nicht blockiert"""
         threading.Thread(target=self._send_telegram, args=(text,), daemon=True).start()
 
     def _send_telegram(self, text):
@@ -200,8 +216,8 @@ class AtlasApp(App):
         payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text}
         try:
             requests.post(url, json=payload, timeout=5)
-        except Exception as e:
-            print(f"Telegram Fehler: {e}")
+        except Exception:
+            pass
 
     def update_bar_rect(self, instance, value):
         self.bar_rect.pos = instance.pos
@@ -230,7 +246,7 @@ class AtlasApp(App):
         self.is_tracking = not self.is_tracking
         if self.is_tracking:
             self.track_btn.text = "[ TRACKING STOPPEN ]"
-            self.track_btn.background_color = (0.6, 0, 0, 0.85)
+            self.track_btn.background_color = (0.6, 0, 0, 0.95)
             self.track_btn.color = (1, 0.3, 0.3, 1)
             self.banner_label.text = "[ TRACKING AKTIV ]"
             self.banner_label.color = (0, 1, 0, 1)
@@ -240,7 +256,7 @@ class AtlasApp(App):
             self.start_gps()
         else:
             self.track_btn.text = "[ TRACKING STARTEN ]"
-            self.track_btn.background_color = (0, 0.4, 0.1, 0.85)
+            self.track_btn.background_color = (0, 0.4, 0.1, 0.95)
             self.track_btn.color = (0, 1, 0, 1)
             self.banner_label.text = "[ ATLAS: ONLINE ]"
             self.banner_label.color = (0, 1, 0, 1)
@@ -277,10 +293,10 @@ class AtlasApp(App):
             return
 
         new_status = ""
-        if self.current_speed < 15.0 and self.current_speed > 1.0:
+        if 1.0 < self.current_speed < 15.0:
             new_status = "slow"
             self.traffic_label.text = "⚠️ ZÄHFLIESSENDER VERKEHR"
-            self.banner_label.text = "⚠️ WARNUNG: STAU"
+            self.banner_label.text = "⚠️ STAU"
             self.banner_label.color = (1, 0.5, 0, 1)
             if self.last_status != "slow":
                 msg = f"⚠️ Atlas Stauwarner:\nZähfließender Verkehr ({self.current_speed:.1f} km/h)"
