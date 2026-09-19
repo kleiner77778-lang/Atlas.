@@ -1,10 +1,8 @@
-import requests
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.image import Image
 from kivy.graphics import Color, Rectangle
 from kivy.clock import Clock
 
@@ -23,33 +21,22 @@ class AtlasApp(App):
 
         root = FloatLayout()
 
-        # Tiefschwarzer Hintergrund
+        # Schwarz-Hintergrund
         with root.canvas.before:
             Color(0, 0, 0, 1)
             self.bg_rect = Rectangle(pos=root.pos, size=root.size)
         root.bind(pos=self.update_bg, size=self.update_bg)
 
-        # Neon Truck Bild als zentrales Marken-Logo
-        # Hinweis: Speichere das Neon-Truck Bild im Repo als "truck_logo.png"
-        self.truck_logo = Image(
-            source='truck_logo.png',
-            size_hint=(0.7, 0.7),
-            pos_hint={'center_x': 0.5, 'center_y': 0.55},
-            allow_stretch=True,
-            keep_ratio=True
-        )
-        root.add_widget(self.truck_logo)
-
-        # UI Overlay Layout
-        ui_layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        # Haupt-UI Layout
+        ui_layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
         
         # Header Status
         self.header = Label(
             text="[ SYSTEM: ATLAS ONLINE ]",
-            font_size='22sp',
+            font_size='20sp',
             bold=True,
             color=(0, 1, 0, 1),
-            size_hint=(1, 0.12)
+            size_hint=(1, 0.15)
         )
         ui_layout.add_widget(self.header)
 
@@ -58,22 +45,25 @@ class AtlasApp(App):
             text="GPS: SIGNAL SUCHE...",
             font_size='14sp',
             color=(0.2, 0.8, 0.2, 0.9),
-            size_hint=(1, 0.08)
+            size_hint=(1, 0.15)
         )
         ui_layout.add_widget(self.gps_label)
 
         # Stauwarner Banner
         self.traffic_label = Label(
             text="[ STAUWARNER: INAKTIV ]",
-            font_size='16sp',
+            font_size='15sp',
             bold=True,
             color=(0, 0.8, 1, 1),
-            size_hint=(1, 0.1)
+            size_hint=(1, 0.2),
+            text_size=(None, None),
+            halign='center',
+            valign='middle'
         )
         ui_layout.add_widget(self.traffic_label)
 
-        # Transparenter Freiraum (hält die Mitte für das Truck-Bild frei)
-        ui_layout.add_widget(BoxLayout(size_hint=(1, 0.5)))
+        # Freiraum in der Mitte
+        ui_layout.add_widget(BoxLayout(size_hint=(1, 0.3)))
 
         # Tracking Start/Stop Button
         self.btn = Button(
@@ -90,9 +80,7 @@ class AtlasApp(App):
 
         root.add_widget(ui_layout)
         
-        # Intervall für Verkehrslage-Check (alle 10 Sek)
         Clock.schedule_interval(self.check_traffic, 10)
-
         return root
 
     def update_bg(self, instance, value):
@@ -137,17 +125,17 @@ class AtlasApp(App):
         self.lat = kwargs.get('lat', 0.0)
         self.lon = kwargs.get('lon', 0.0)
         self.current_speed = kwargs.get('speed', 0.0) * 3.6
-        self.gps_label.text = f"LAT: {self.lat:.5f} | LON: {self.lon:.5f} | V: {self.current_speed:.1f} km/h"
+        self.gps_label.text = f"LAT: {self.lat:.5f} | LON: {self.lon:.5f}\nV: {self.current_speed:.1f} km/h"
 
     def check_traffic(self, dt):
         if not self.is_tracking:
             return
 
         if self.current_speed < 15.0 and self.current_speed > 1.0:
-            self.traffic_label.text = "⚠️ WARNUNG: ZÄHFLIESSENDER VERKEHR / STAU!"
+            self.traffic_label.text = "⚠️ WARNUNG:\nZÄHFLIESSENDER VERKEHR"
             self.traffic_label.color = (1, 0.5, 0, 1)
         elif self.current_speed <= 1.0:
-            self.traffic_label.text = "🛑 WARNUNG: STILLSTAND DETEKTIERT"
+            self.traffic_label.text = "🛑 WARNUNG:\nSTILLSTAND DETEKTIERT"
             self.traffic_label.color = (1, 0, 0, 1)
         else:
             self.traffic_label.text = "🟢 FREIE FAHRT AUF DER ROUTE"
