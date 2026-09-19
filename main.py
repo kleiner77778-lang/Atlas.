@@ -33,10 +33,10 @@ except ImportError:
     tts = None
 
 # -------------------------------------------------------------
-# TELEGRAM KONFIGURATION
+# TELEGRAM KONFIGURATION (Integrierte Daten)
 # -------------------------------------------------------------
-TELEGRAM_BOT_TOKEN = "DEIN_BOT_TOKEN_HIER"
-TELEGRAM_CHAT_ID = "DEINE_CHAT_ID_HIER"
+TELEGRAM_BOT_TOKEN = "8413301731:AAHRM32xA2CkAkrrcf85sqYDR88YK14k3bs"
+TELEGRAM_CHAT_ID = "8941361378"
 
 MATRIX_CHARS = "ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789ABCDEF$#@%&*"
 
@@ -120,10 +120,10 @@ class AtlasApp(App):
         self.rain = MatrixRainWidget(size_hint=(1, 1))
         self.root_layout.add_widget(self.rain)
 
-        # 2. Oberes Status-Banner
+        # 2. Oberes Status-Banner (Sauber eingerückt)
         self.top_bar = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.12),
+            size_hint=(1, 0.1),
             pos_hint={'top': 1},
             padding=[15, 8, 15, 8],
             spacing=10
@@ -158,10 +158,10 @@ class AtlasApp(App):
         self.top_bar.add_widget(self.menu_btn)
         self.root_layout.add_widget(self.top_bar)
 
-        # 3. Hauptmenü Overlay (zentriert & gut lesbar)
+        # 3. Hauptmenü Overlay (Zentriert & abgedunkelt)
         self.menu_overlay = BoxLayout(
             orientation='vertical',
-            size_hint=(0.85, 0.6),
+            size_hint=(0.85, 0.55),
             pos_hint={'center_x': 0.5, 'center_y': 0.45},
             padding=[20, 15],
             spacing=12
@@ -202,22 +202,23 @@ class AtlasApp(App):
 
         self.root_layout.add_widget(self.menu_overlay)
 
-        # Stauwarner-Prüfintervall
+        # Stauwarner-Prüfintervall (alle 10 Sek)
         Clock.schedule_interval(self.check_traffic, 10)
         return self.root_layout
 
     def send_telegram_async(self, text):
+        """Sendet Telegram-Nachrichten im Hintergrund-Thread (verhindert Ruckler)"""
         threading.Thread(target=self._send_telegram, args=(text,), daemon=True).start()
 
     def _send_telegram(self, text):
-        if TELEGRAM_BOT_TOKEN == "DEIN_BOT_TOKEN_HIER":
+        if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "DEIN_BOT_TOKEN_HIER":
             return
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text}
         try:
             requests.post(url, json=payload, timeout=5)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Telegram Fehler: {e}")
 
     def update_bar_rect(self, instance, value):
         self.bar_rect.pos = instance.pos
@@ -290,6 +291,11 @@ class AtlasApp(App):
 
     def check_traffic(self, dt):
         if not self.is_tracking:
+            return
+
+        # Erst auswerten, wenn reale GPS-Koordinaten vorhanden sind
+        if self.lat == 0.0 and self.lon == 0.0:
+            self.traffic_label.text = "[ STAUWARNER: GPS SUCHE... ]"
             return
 
         new_status = ""
