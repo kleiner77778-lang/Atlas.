@@ -1,4 +1,6 @@
 import random
+import threading
+import requests
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -8,12 +10,18 @@ from kivy.graphics import Color, Rectangle
 from kivy.clock import Clock
 from kivy.core.text import Label as CoreLabel
 
-# Plyer für Android-GPS und Sprachausgabe (TTS)
+# Plyer für Android-GPS-Hardware und Sprachausgabe
 try:
     from plyer import gps, tts
 except ImportError:
     gps = None
     tts = None
+
+# -------------------------------------------------------------
+# TELEGRAM KONFIGURATION (Trage hier deine Daten ein!)
+# -------------------------------------------------------------
+TELEGRAM_BOT_TOKEN = "DEIN_BOT_TOKEN_HIER"
+TELEGRAM_CHAT_ID = "DEINE_CHAT_ID_HIER"
 
 MATRIX_CHARS = "ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789ABCDEF$#@%&*"
 
@@ -87,15 +95,17 @@ class AtlasApp(App):
     def build(self):
         self.is_tracking = False
         self.current_speed = 0.0
+        self.lat = 0.0
+        self.lon = 0.0
         self.last_status = ""
 
         self.root_layout = FloatLayout()
 
-        # 1. Matrix-Regen im Hintergrund
+        # 1. Matrix Rain Hintergrund
         self.rain = MatrixRainWidget(size_hint=(1, 1))
         self.root_layout.add_widget(self.rain)
 
-        # 2. Oberes Banner (Immer sichtbar)
+        # 2. Oberes Banner
         self.top_bar = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.08),
@@ -132,7 +142,7 @@ class AtlasApp(App):
         self.top_bar.add_widget(self.menu_btn)
         self.root_layout.add_widget(self.top_bar)
 
-        # 3. Hauptmenü Overlay (Ausblendbar)
+        # 3. Hauptmenü Overlay
         self.menu_overlay = BoxLayout(
             orientation='vertical',
             size_hint=(0.9, 0.55),
@@ -176,10 +186,22 @@ class AtlasApp(App):
 
         self.root_layout.add_widget(self.menu_overlay)
 
-        # Intervall für Verkehrslage-Check (alle 10 Sek)
         Clock.schedule_interval(self.check_traffic, 10)
-
         return self.root_layout
+
+    def send_telegram_async(self, text):
+        """Startet den Telegram-Versand in einem separaten Thread, damit die App nicht blockiert"""
+        threading.Thread(target=self._send_telegram, args=(text,), daemon=True).start()
+
+    def _send_telegram(self, text):
+        if TELEGRAM_BOT_TOKEN == "DEIN_BOT_TOKEN_HIER":
+            return
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text}
+        try:
+            requests.post(url, json=payload, timeout=5)
+        except Exception as e:
+            print(f"Telegram Fehler: {e}")
 
     def update_bar_rect(self, instance, value):
         self.bar_rect.pos = instance.pos
@@ -214,6 +236,7 @@ class AtlasApp(App):
             self.banner_label.color = (0, 1, 0, 1)
             self.traffic_label.text = "[ STAUWARNER: SCANNE... ]"
             self.speak("Tracking gestartet")
+            self.send_telegram_async("🚛 Atlas Tracking GESTARTET")
             self.start_gps()
         else:
             self.track_btn.text = "[ TRACKING STARTEN ]"
@@ -223,6 +246,7 @@ class AtlasApp(App):
             self.banner_label.color = (0, 1, 0, 1)
             self.traffic_label.text = "[ STAUWARNER: INAKTIV ]"
             self.speak("Tracking gestoppt")
+            self.send_telegram_async("🛑 Atlas Tracking GESTOPPT")
             self.stop_gps()
 
     def start_gps(self):
@@ -242,6 +266,8 @@ class AtlasApp(App):
             pass
 
     def on_gps_location(self, **kwargs):
+        self.lat = kwargs.get('lat', 0.0)
+        self.lon = kwargs.get('lon', 0.0)
         speed_ms = kwargs.get('speed', 0.0)
         self.current_speed = speed_ms * 3.6
         self.gps_label.text = f"Geschwindigkeit: {self.current_speed:.1f} km/h"
@@ -257,14 +283,18 @@ class AtlasApp(App):
             self.banner_label.text = "⚠️ WARNUNG: STAU"
             self.banner_label.color = (1, 0.5, 0, 1)
             if self.last_status != "slow":
+                msg = f"⚠️ Atlas Stauwarner:\nZähfließender Verkehr ({self.current_speed:.1f} km/h)"
                 self.speak("Achtung, zähfließender Verkehr voraus.")
+                self.send_telegram_async(msg)
         elif self.current_speed <= 1.0:
             new_status = "stop"
             self.traffic_label.text = "🛑 STILLSTAND DETEKTIERT"
             self.banner_label.text = "🛑 STILLSTAND"
             self.banner_label.color = (1, 0, 0, 1)
             if self.last_status != "stop":
+                msg = f"🛑 Atlas Stauwarner:\nStillstand detektiert! (Pos: {self.lat:.4f}, {self.lon:.4f})"
                 self.speak("Achtung, Stillstand detektiert.")
+                self.send_telegram_async(msg)
         else:
             new_status = "clear"
             self.traffic_label.text = "🟢 FREIE FAHRT"
@@ -272,6 +302,7 @@ class AtlasApp(App):
             self.banner_label.color = (0, 1, 0, 1)
             if self.last_status in ["slow", "stop"]:
                 self.speak("Freie Fahrt.")
+                self.send_telegram_async("🟢 Atlas Stauwarner: Freie Fahrt auf der Route")
 
         self.last_status = new_status
 
