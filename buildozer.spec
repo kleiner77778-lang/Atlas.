@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 1.0.0
 
 # (list) Application requirements
-# openssl ergänzt, damit HTTPS-Requests mit requests fehlerfrei kompilieren
+# pyjnius für GPS & openssl für HTTPS/Telegram
 requirements = python3,kivy,requests,pyjnius,openssl,urllib3,chardet,certifi,idna
 
 # (str) Custom application icon
@@ -52,7 +52,7 @@ android.skip_update = False
 # (bool) If True, accept all SDK licences
 android.accept_sdk_license = True
 
-# (str) Nur für 64-Bit ARM bauen, um die Build-Zeit zu halbieren und Timeouts zu vermeiden
+# (str) Nur für arm64-v8a bauen (spart Zeit und verhindert Build-Timeouts)
 android.archs = arm64-v8a
 
 [buildozer]
