@@ -26,7 +26,7 @@ requirements = python3,kivy,plyer,requests,urllib3,certifi,idna,charset-normaliz
 # icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
-orientation = portrait
+orientation = all
 
 # (bool) Indicate if the application should be fullscreen
 fullscreen = 1
