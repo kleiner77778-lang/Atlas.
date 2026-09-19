@@ -4,55 +4,64 @@
 title = Atlas E-Lkw Tracker
 
 # (str) Package name
-package.name = elkwtracker
+package.name = atlastracker
 
-# (str) Package domain (needed for android packaging)
-package.domain = org.elkw
+# (str) Package domain (needed for android/ios packaging)
+package.domain = org.atlas
 
-# (str) Source code where the main.py lives
+# (str) Source code where the main.py live
 source.dir = .
 
-# (list) Source files to include
-source.include_exts = py,png,jpg,kv,atlas,json
+# (list) Source files to include (let empty to include all the files)
+source.include_exts = py,png,jpg,kv,atlas
 
-# (str) Application versioning
+# (str) Application versioning (method 1)
 version = 1.0.0
 
 # (list) Application requirements
-# WICHTIG: requests + openssl + urllib3 sichern den Telegram-HTTPs-Aufruf ab
-requirements = python3,kivy,plyer,requests,urllib3,certifi,idna,charset-normalizer,openssl
+# pyjnius ist notwendig für den direkten Zugriff auf den Android LocationManager
+requirements = python3,kivy,requests,pyjnius,urllib3,chardet,certifi,idna
 
-(str) Custom application icon (falls vorhanden, sonst Zeile mit # auskommentieren)
+# (str) Custom application icon
 icon.filename = %(source.dir)s/icon.png
 
-# () Supported orientations
+# (str) Supported orientations (portrait, landscape, sensorLandscape, all)
+# 'all' erlaubt das automatische Drehen im Lkw
 orientation = all
 
-# (bool) Indicate if the application should be fullscreen
-fullscreen = 1
+# (bool) Indicate if the application should be fullscreen or not
+fullscreen = 0
 
 # (list) Permissions
-android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE
+# WAKE_LOCK und FOREGROUND_SERVICE verhindern das Einschlafen der App im Hintergrund
+android.permissions = ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE, WAKE_LOCK, INTERNET
 
-# (int) Target Android API
+# (list) Features
+# Erfordert explizit die GPS-Hardware des Smartphones
+android.features = android.hardware.location.gps
+
+# (int) Target Android API, should be as high as possible.
 android.api = 33
 
 # (int) Minimum API required
 android.minapi = 21
 
-# (str) Android NDK version
+# (str) Android NDK version to use
 android.ndk = 25b
 
-# (bool) Accept SDK license automatically
+# (bool) If True, then skip building the ndk recipes
+android.skip_update = False
+
+# (bool) If True, accept all SDK licences
 android.accept_sdk_license = True
 
-# (list) The Android archs to build for
-android.archs = arm64-v8a
+# (str) The Android arch to build for
+android.archs = arm64-v8a, armeabi-v7a
 
 [buildozer]
 
-# (int) Log level
+# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
 log_level = 2
 
-# (int) Display warning if buildozer is run as root
+# (int) Display warning if buildozer is run as root (0 = disable, 1 = enable)
 warn_on_root = 1
