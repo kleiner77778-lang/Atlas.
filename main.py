@@ -1,3 +1,4 @@
+import random
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -5,104 +6,223 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
 from kivy.clock import Clock
+from kivy.core.text import Label as CoreLabel
 
-# Plyer für Android-GPS-Hardware Zugriff
+# Plyer für Android-GPS und Sprachausgabe (TTS)
 try:
-    from plyer import gps
+    from plyer import gps, tts
 except ImportError:
     gps = None
+    tts = None
+
+MATRIX_CHARS = "ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789ABCDEF$#@%&*"
+
+class MatrixRainWidget(FloatLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = []
+        self.font_size = 18
+        self.char_textures = {}
+        self.preload_textures()
+        self.bind(size=self.reinit_rain)
+        Clock.schedule_once(self.init_rain, 0.1)
+
+    def preload_textures(self):
+        for char in MATRIX_CHARS:
+            core_label = CoreLabel(text=char, font_size=self.font_size)
+            core_label.refresh()
+            self.char_textures[char] = core_label.texture
+
+    def init_rain(self, dt):
+        self.rebuild_columns()
+        Clock.schedule_interval(self.update_rain, 0.05)
+
+    def reinit_rain(self, instance, value):
+        self.rebuild_columns()
+
+    def rebuild_columns(self):
+        if self.width <= 0 or self.height <= 0:
+            return
+        num_cols = int(self.width / self.font_size) + 1
+        self.cols = []
+        for i in range(num_cols):
+            self.cols.append({
+                'x': i * self.font_size,
+                'y': random.randint(0, int(self.height)),
+                'speed': random.randint(6, 16),
+                'length': random.randint(8, 18),
+                'chars': [random.choice(MATRIX_CHARS) for _ in range(25)]
+            })
+
+    def update_rain(self, dt):
+        self.canvas.clear()
+        with self.canvas:
+            Color(0, 0, 0, 1)
+            Rectangle(pos=self.pos, size=self.size)
+
+            for col in self.cols:
+                col['y'] -= col['speed']
+                if col['y'] < -col['length'] * self.font_size:
+                    col['y'] = self.height + random.randint(10, 100)
+                    col['speed'] = random.randint(6, 16)
+
+                for j in range(col['length']):
+                    char_y = col['y'] + (j * self.font_size)
+                    if 0 <= char_y <= self.height:
+                        if j == 0:
+                            Color(0.85, 1.0, 0.85, 1)
+                        else:
+                            alpha = max(0.08, 1.0 - (j / col['length']))
+                            Color(0.0, 1.0, 0.25, alpha)
+
+                        if random.random() < 0.05:
+                            col['chars'][j] = random.choice(MATRIX_CHARS)
+
+                        char = col['chars'][j]
+                        texture = self.char_textures.get(char)
+                        if texture:
+                            Rectangle(texture=texture, pos=(col['x'], char_y), size=texture.size)
 
 class AtlasApp(App):
     def build(self):
         self.is_tracking = False
         self.current_speed = 0.0
-        self.lat = 0.0
-        self.lon = 0.0
+        self.last_status = ""
 
-        root = FloatLayout()
+        self.root_layout = FloatLayout()
 
-        # Schwarz-Hintergrund
-        with root.canvas.before:
-            Color(0, 0, 0, 1)
-            self.bg_rect = Rectangle(pos=root.pos, size=root.size)
-        root.bind(pos=self.update_bg, size=self.update_bg)
+        # 1. Matrix-Regen im Hintergrund
+        self.rain = MatrixRainWidget(size_hint=(1, 1))
+        self.root_layout.add_widget(self.rain)
 
-        # Haupt-UI Layout
-        ui_layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
-        
-        # Header Status
-        self.header = Label(
-            text="[ SYSTEM: ATLAS ONLINE ]",
-            font_size='20sp',
+        # 2. Oberes Banner (Immer sichtbar)
+        self.top_bar = BoxLayout(
+            orientation='horizontal',
+            size_hint=(1, 0.08),
+            pos_hint={'top': 1},
+            padding=[10, 5],
+            spacing=10
+        )
+        with self.top_bar.canvas.before:
+            Color(0, 0, 0, 0.75)
+            self.bar_rect = Rectangle(pos=self.top_bar.pos, size=self.top_bar.size)
+        self.top_bar.bind(pos=self.update_bar_rect, size=self.update_bar_rect)
+
+        self.banner_label = Label(
+            text="[ ATLAS: ONLINE ]",
+            font_size='14sp',
             bold=True,
             color=(0, 1, 0, 1),
-            size_hint=(1, 0.15)
+            halign='left',
+            valign='middle'
         )
-        ui_layout.add_widget(self.header)
+        self.banner_label.bind(size=self.banner_label.setter('text_size'))
 
-        # GPS Live-Anzeige
+        self.menu_btn = Button(
+            text="⚙️ MENÜ",
+            size_hint=(0.3, 1),
+            background_normal='',
+            background_color=(0, 0.3, 0.1, 0.9),
+            color=(0, 1, 0, 1),
+            bold=True
+        )
+        self.menu_btn.bind(on_press=self.toggle_menu)
+
+        self.top_bar.add_widget(self.banner_label)
+        self.top_bar.add_widget(self.menu_btn)
+        self.root_layout.add_widget(self.top_bar)
+
+        # 3. Hauptmenü Overlay (Ausblendbar)
+        self.menu_overlay = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.9, 0.55),
+            pos_hint={'center_x': 0.5, 'center_y': 0.45},
+            padding=20,
+            spacing=15
+        )
+        with self.menu_overlay.canvas.before:
+            Color(0, 0, 0, 0.88)
+            self.overlay_rect = Rectangle(pos=self.menu_overlay.pos, size=self.menu_overlay.size)
+        self.menu_overlay.bind(pos=self.update_overlay_rect, size=self.update_overlay_rect)
+
         self.gps_label = Label(
             text="GPS: SIGNAL SUCHE...",
             font_size='14sp',
-            color=(0.2, 0.8, 0.2, 0.9),
-            size_hint=(1, 0.15)
+            color=(0.2, 0.8, 0.2, 1),
+            size_hint=(1, 0.2)
         )
-        ui_layout.add_widget(self.gps_label)
+        self.menu_overlay.add_widget(self.gps_label)
 
-        # Stauwarner Banner
         self.traffic_label = Label(
             text="[ STAUWARNER: INAKTIV ]",
-            font_size='15sp',
+            font_size='16sp',
             bold=True,
             color=(0, 0.8, 1, 1),
-            size_hint=(1, 0.2),
-            text_size=(None, None),
-            halign='center',
-            valign='middle'
+            size_hint=(1, 0.2)
         )
-        ui_layout.add_widget(self.traffic_label)
+        self.menu_overlay.add_widget(self.traffic_label)
 
-        # Freiraum in der Mitte
-        ui_layout.add_widget(BoxLayout(size_hint=(1, 0.3)))
-
-        # Tracking Start/Stop Button
-        self.btn = Button(
+        self.track_btn = Button(
             text="[ TRACKING STARTEN ]",
             font_size='18sp',
             bold=True,
             background_normal='',
-            background_color=(0, 0.4, 0.1, 0.85),
+            background_color=(0, 0.4, 0.1, 0.9),
             color=(0, 1, 0, 1),
-            size_hint=(1, 0.2)
+            size_hint=(1, 0.3)
         )
-        self.btn.bind(on_press=self.toggle_tracking)
-        ui_layout.add_widget(self.btn)
+        self.track_btn.bind(on_press=self.toggle_tracking)
+        self.menu_overlay.add_widget(self.track_btn)
 
-        root.add_widget(ui_layout)
-        
+        self.root_layout.add_widget(self.menu_overlay)
+
+        # Intervall für Verkehrslage-Check (alle 10 Sek)
         Clock.schedule_interval(self.check_traffic, 10)
-        return root
 
-    def update_bg(self, instance, value):
-        self.bg_rect.pos = instance.pos
-        self.bg_rect.size = instance.size
+        return self.root_layout
+
+    def update_bar_rect(self, instance, value):
+        self.bar_rect.pos = instance.pos
+        self.bar_rect.size = instance.size
+
+    def update_overlay_rect(self, instance, value):
+        self.overlay_rect.pos = instance.pos
+        self.overlay_rect.size = instance.size
+
+    def toggle_menu(self, instance):
+        if self.menu_overlay.parent:
+            self.root_layout.remove_widget(self.menu_overlay)
+            self.menu_btn.text = "⚙️ MENÜ"
+        else:
+            self.root_layout.add_widget(self.menu_overlay)
+            self.menu_btn.text = "✖ SCHLIESSEN"
+
+    def speak(self, text):
+        try:
+            if tts:
+                tts.speak(text)
+        except Exception:
+            pass
 
     def toggle_tracking(self, instance):
         self.is_tracking = not self.is_tracking
         if self.is_tracking:
-            self.btn.text = "[ TRACKING STOPPEN ]"
-            self.btn.background_color = (0.6, 0, 0, 0.85)
-            self.btn.color = (1, 0.3, 0.3, 1)
-            self.header.text = "[ TRACKING AKTIV ]"
-            self.traffic_label.text = "[ STAUWARNER: SCANNE ROUTE... ]"
+            self.track_btn.text = "[ TRACKING STOPPEN ]"
+            self.track_btn.background_color = (0.6, 0, 0, 0.85)
+            self.track_btn.color = (1, 0.3, 0.3, 1)
+            self.banner_label.text = "[ TRACKING AKTIV ]"
+            self.banner_label.color = (0, 1, 0, 1)
+            self.traffic_label.text = "[ STAUWARNER: SCANNE... ]"
+            self.speak("Tracking gestartet")
             self.start_gps()
         else:
-            self.btn.text = "[ TRACKING STARTEN ]"
-            self.btn.background_color = (0, 0.4, 0.1, 0.85)
-            self.btn.color = (0, 1, 0, 1)
-            self.header.text = "[ SYSTEM: ATLAS ONLINE ]"
+            self.track_btn.text = "[ TRACKING STARTEN ]"
+            self.track_btn.background_color = (0, 0.4, 0.1, 0.85)
+            self.track_btn.color = (0, 1, 0, 1)
+            self.banner_label.text = "[ ATLAS: ONLINE ]"
+            self.banner_label.color = (0, 1, 0, 1)
             self.traffic_label.text = "[ STAUWARNER: INAKTIV ]"
-            self.traffic_label.color = (0, 0.8, 1, 1)
+            self.speak("Tracking gestoppt")
             self.stop_gps()
 
     def start_gps(self):
@@ -122,24 +242,38 @@ class AtlasApp(App):
             pass
 
     def on_gps_location(self, **kwargs):
-        self.lat = kwargs.get('lat', 0.0)
-        self.lon = kwargs.get('lon', 0.0)
-        self.current_speed = kwargs.get('speed', 0.0) * 3.6
-        self.gps_label.text = f"LAT: {self.lat:.5f} | LON: {self.lon:.5f}\nV: {self.current_speed:.1f} km/h"
+        speed_ms = kwargs.get('speed', 0.0)
+        self.current_speed = speed_ms * 3.6
+        self.gps_label.text = f"Geschwindigkeit: {self.current_speed:.1f} km/h"
 
     def check_traffic(self, dt):
         if not self.is_tracking:
             return
 
+        new_status = ""
         if self.current_speed < 15.0 and self.current_speed > 1.0:
-            self.traffic_label.text = "⚠️ WARNUNG:\nZÄHFLIESSENDER VERKEHR"
-            self.traffic_label.color = (1, 0.5, 0, 1)
+            new_status = "slow"
+            self.traffic_label.text = "⚠️ ZÄHFLIESSENDER VERKEHR"
+            self.banner_label.text = "⚠️ WARNUNG: STAU"
+            self.banner_label.color = (1, 0.5, 0, 1)
+            if self.last_status != "slow":
+                self.speak("Achtung, zähfließender Verkehr voraus.")
         elif self.current_speed <= 1.0:
-            self.traffic_label.text = "🛑 WARNUNG:\nSTILLSTAND DETEKTIERT"
-            self.traffic_label.color = (1, 0, 0, 1)
+            new_status = "stop"
+            self.traffic_label.text = "🛑 STILLSTAND DETEKTIERT"
+            self.banner_label.text = "🛑 STILLSTAND"
+            self.banner_label.color = (1, 0, 0, 1)
+            if self.last_status != "stop":
+                self.speak("Achtung, Stillstand detektiert.")
         else:
-            self.traffic_label.text = "🟢 FREIE FAHRT AUF DER ROUTE"
-            self.traffic_label.color = (0, 1, 0.3, 1)
+            new_status = "clear"
+            self.traffic_label.text = "🟢 FREIE FAHRT"
+            self.banner_label.text = "[ TRACKING AKTIV ]"
+            self.banner_label.color = (0, 1, 0, 1)
+            if self.last_status in ["slow", "stop"]:
+                self.speak("Freie Fahrt.")
+
+        self.last_status = new_status
 
 if __name__ == '__main__':
     AtlasApp().run()
