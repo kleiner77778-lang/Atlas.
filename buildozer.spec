@@ -15,17 +15,17 @@ source.dir = .
 # (list) Source files to include
 source.include_exts = py,png,jpg,kv,atlas,json
 
-# (str) Custom application icon (Dateiname im Projektordner)
+# (str) Custom application icon
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Application versioning
 version = 1.0.0
 
 # (list) Application requirements
-# cython==0.29.33 verhindert den Kivy-Build-Fehler, pyjnius für GPS, openssl für Telegram
-requirements = python3,kivy==2.2.1,cython==0.29.33,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
+# OHNE cython in den requirements!
+requirements = python3,kivy,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
 
-# (str) Supported orientations (portrait, landscape, sensorLandscape, all)
+# (str) Supported orientations
 orientation = all
 
 # (bool) Indicate if the application should be fullscreen or not
@@ -49,7 +49,7 @@ android.ndk = 25b
 # (bool) Accept SDK licenses automatically
 android.accept_sdk_license = True
 
-# (str) Nur für arm64-v8a bauen (spart Zeit auf GitHub)
+# (str) Nur für arm64-v8a bauen
 android.archs = arm64-v8a
 
 [buildozer]
