@@ -53,7 +53,7 @@ class AtlasApp(App):
         dashboard.add_widget(self.range_label)
         self.root_layout.add_widget(dashboard)
 
-        # 3. Kontingent-Eingabebereich (Ausblendbar im Menü)
+        # 3. Kontingent-Eingabebereich (Ausblendbar)
         self.input_box = BoxLayout(orientation='horizontal', size_hint_y=0.15, spacing=10)
         self.kontingent_input = TextInput(
             hint_text="Kontingent (kWh)", 
@@ -93,7 +93,6 @@ class AtlasApp(App):
             self.root_layout.remove_widget(self.input_box)
             self.toggle_input_btn.text = "Eingabe anzeigen"
         else:
-            # Fügt das Eingabefeld wieder an Stelle 2 ein
             self.root_layout.add_widget(self.input_box, index=1)
             self.toggle_input_btn.text = "Eingabe ausblenden"
 
@@ -105,7 +104,6 @@ class AtlasApp(App):
                 self.kontingent_kwh = float(val)
                 self.range_label.text = f"Restreichweite: ~{int(self.kontingent_kwh * 1.2)} km"
                 self.kontingent_input.text = ""
-                # Nach dem Speichern automatisch ausblenden
                 self.toggle_inputs(None)
             except ValueError:
                 pass
