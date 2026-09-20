@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,atlas,json
 icon.filename = %(source.dir)s/icon.png
 version = 1.0.0
 
-requirements = python3,kivy==2.2.1,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
+requirements = python3,kivy,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
 
 # Gültige Werte: portrait, landscape, sensorPortrait, sensorLandscape
 orientation = portrait
