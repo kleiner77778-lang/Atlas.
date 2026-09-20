@@ -7,7 +7,7 @@ source.include_exts = py,png,jpg,kv,atlas
 source.exclude_patterns = license, lambda*, kivy/tests/*
 version = 0.1
 requirements = python3,kivy,requests,pyjnius
-orientation = portrait, landscape, sensorLandscape, sensorPortrait
+orientation = portrait, landscape
 
 fullscreen = 0
 android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE, WAKE_LOCK
