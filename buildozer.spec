@@ -11,7 +11,7 @@ version = 1.0.0
 requirements = python3,kivy==2.2.1,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
 
 # Gültige Werte: portrait, landscape, sensorPortrait, sensorLandscape
-orientation = all
+orientation = portrait
 
 fullscreen = 0
 android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE, WAKE_LOCK
