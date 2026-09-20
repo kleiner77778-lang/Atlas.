@@ -15,26 +15,25 @@ source.dir = .
 # (list) Source files to include
 source.include_exts = py,png,jpg,kv,atlas,json
 
-# (str) Custom application icon (braucht eine icon.png im Hauptordner)
+# (str) Custom application icon
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Application versioning
 version = 1.0.0
 
 # (list) Application requirements
-# Kein Cython hier eintragen (wird im GitHub-Runner gesteuert), pyjnius für GPS & openssl für Telegram HTTPS
 requirements = python3,kivy==2.2.1,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
 
-# (str) Supported orientations (portrait, landscape, sensorLandscape, all)
-orientation = all
+# (str) Supported orientations (portrait, landscape, sensor, sensorLandscape)
+orientation = sensor
 
 # (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
-# (list) Permissions (WAKE_LOCK hält die App im Hintergrund aktiv)
+# (list) Permissions
 android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE, WAKE_LOCK
 
-# (list) Features (Echtes Hardware-GPS)
+# (list) Features
 android.features = android.hardware.location.gps
 
 # (int) Target Android API
@@ -49,7 +48,7 @@ android.ndk = 25b
 # (bool) Accept SDK licenses automatically
 android.accept_sdk_license = True
 
-# (str) Nur für arm64-v8a bauen (spart Build-Zeit)
+# (str) Nur für arm64-v8a bauen
 android.archs = arm64-v8a
 
 [buildozer]
