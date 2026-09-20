@@ -23,7 +23,7 @@ version = 0.1
 requirements = python3,kivy,requests,pyjnius,openssl,urllib3,certifi,idna,charset-normalizer
 
 # (str) Supported orientations (landscape, sensorLandscape, portrait or all)
-orientation = all
+orientation = sensor
 
 # (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
