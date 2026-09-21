@@ -8,8 +8,8 @@ source.exclude_patterns = license, lambda*, kivy/tests/*
 version = 0.1
 requirements = python3,kivy,requests,pyjnius
 
-# Automatische Drehung basierend auf dem Sensor (Hochformat-Hauptausrichtung)
-orientation = sensorPortrait
+# Automatische Sensor-Drehung (Gültiger Buildozer-Wert)
+orientation = sensor
 
 fullscreen = 0
 
