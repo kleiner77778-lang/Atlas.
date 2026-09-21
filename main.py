@@ -4,8 +4,7 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, StringProperty, ListProperty
-from kivy.uix.boxlayout import BoxLayout
+from kivy.properties import StringProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 from kivy.utils import platform
@@ -58,7 +57,7 @@ class MatrixRainWidget(Widget):
             Rectangle(pos=self.pos, size=self.size)
 
         col_width = 20
-        num_cols = int(self.width / col_width) + 1
+        num_cols = int(self.width / col_width) + 1 if self.width > 0 else 10
         self.columns = []
 
         for i in range(num_cols):
@@ -79,16 +78,21 @@ class MatrixRainWidget(Widget):
                     col['speed'] = random.randint(5, 15)
 
                 # Matrix-Regentropfen zeichnen
-                Color(0, 1, 0, 0.35)  # Grüner Matrix-Thrust
+                Color(0, 1, 0, 0.35)
                 for j in range(col['length']):
                     py = col['y'] + (j * 15)
                     if 0 <= py <= self.height:
                         Rectangle(pos=(col['x'], py), size=(4, 10))
 
 
+# --- HAUPTLAYOUT ---
+class MainScreen(FloatLayout):
+    pass
+
+
 # --- KIVY INTERFACE BUILDER ---
 KV = '''
-FloatLayout:
+<MainScreen>:
     MatrixRainWidget:
         id: matrix_bg
 
@@ -108,25 +112,25 @@ FloatLayout:
             height: 30
 
         Label:
-            text: root.speed_text
+            text: app.speed_text
             font_size: '64sp'
             bold: True
             color: (1, 1, 1, 1)
 
         Label:
-            text: root.range_text
+            text: app.range_text
             font_size: '18sp'
             color: (0.8, 0.8, 0.8, 1)
 
         Label:
-            text: root.gps_status
+            text: app.gps_status
             font_size: '12sp'
-            color: (1, 0.3, 0.3, 1) if "Fehler" in root.gps_status else (0, 0.8, 0, 1)
+            color: (1, 0.3, 0.3, 1) if "Fehler" in app.gps_status else (0, 0.8, 0, 1)
             size_hint_y: None
             height: 20
 
         Label:
-            text: root.coords_text
+            text: app.coords_text
             font_size: '14sp'
             color: (0.6, 0.6, 0.6, 1)
             size_hint_y: None
@@ -154,12 +158,14 @@ class AtlasApp(App):
     gps_status = StringProperty("GPS wird initialisiert...")
 
     def build(self):
-        return Builder.load_string(KV)
+        Builder.load_string(KV)
+        return MainScreen()
 
     def on_start(self):
-        self.start_gps()
+        # Verzögerter GPS-Start um 1 Sekunde für sauberen App-Launch
+        Clock.schedule_once(self.start_gps, 1)
 
-    def start_gps(self):
+    def start_gps(self, dt):
         if platform == 'android':
             try:
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
