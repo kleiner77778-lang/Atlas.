@@ -7,10 +7,18 @@ source.include_exts = py,png,jpg,kv,atlas
 source.exclude_patterns = license, lambda*, kivy/tests/*
 version = 0.1
 requirements = python3,kivy,requests,pyjnius
-orientation = portrait, landscape
+
+# Automatische Drehung basierend auf dem Sensor (Hochformat-Hauptausrichtung)
+orientation = sensorPortrait
 
 fullscreen = 0
+
+# Standort- & GPS-Berechtigungen sowie Hintergrunddienst
 android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE, WAKE_LOCK
+
+# GPS Hardware-Feature explizit aktivieren
+android.features = android.hardware.location.gps
+
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
