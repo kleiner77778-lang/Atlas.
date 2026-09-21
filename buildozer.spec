@@ -19,14 +19,14 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
 # (list) Application requirements
-# WICHTIG: requests + openssl + urllib3 sichern den Telegram-HTTPs-Aufruf ab
+WICHTIG: requests + openssl + urllib3 sichern den Telegram-HTTPs-Aufruf ab
 requirements = python3,kivy,plyer,requests,urllib3,certifi,idna,charset-normalizer,openssl
 
-(str) Custom application icon (falls vorhanden, sonst Zeile mit # auskommentieren)
+# (str) Custom application icon (falls vorhanden, sonst Zeile mit # auskommentieren)
 icon.filename = %(source.dir)s/icon.png
 
-# () Supported orientations
-orientation = all
+# (str) Supported orientations
+orientation = portrait, landscape
 
 # (bool) Indicate if the application should be fullscreen
 fullscreen = 1
