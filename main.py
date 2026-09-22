@@ -34,35 +34,38 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     return R * c
 
 
-# --- PYJNIUS GPS IMPLEMENTIERUNG ---
+# --- SAFELY LOAD PYJNIUS GPS ---
+GPSListener = None
 if platform == 'android':
-    from jnius import PythonJavaClass, java_method, autoclass
-    from android.permissions import request_permissions, Permission
+    try:
+        from jnius import PythonJavaClass, java_method
 
-    class GPSListener(PythonJavaClass):
-        __javainterfaces__ = ['android/location/LocationListener']
-        __javacontext__ = 'app'
+        class GPSListener(PythonJavaClass):
+            __javainterfaces__ = ['android/location/LocationListener']
+            __javacontext__ = 'app'
 
-        def __init__(self, callback):
-            super(GPSListener, self).__init__()
-            self.callback = callback
+            def __init__(self, callback):
+                super(GPSListener, self).__init__()
+                self.callback = callback
 
-        @java_method('(Landroid/location/Location;)V')
-        def onLocationChanged(self, location):
-            if location:
-                lat = location.getLatitude()
-                lon = location.getLongitude()
-                speed = location.getSpeed() * 3.6  # m/s in km/h
-                self.callback(lat, lon, speed)
+            @java_method('(Landroid/location/Location;)V')
+            def onLocationChanged(self, location):
+                if location:
+                    lat = location.getLatitude()
+                    lon = location.getLongitude()
+                    speed = location.getSpeed() * 3.6  # m/s in km/h
+                    self.callback(lat, lon, speed)
 
-        @java_method('(Ljava/lang/String;ILandroid/os/Bundle;)V')
-        def onStatusChanged(self, provider, status, extras): pass
+            @java_method('(Ljava/lang/String;ILandroid/os/Bundle;)V')
+            def onStatusChanged(self, provider, status, extras): pass
 
-        @java_method('(Ljava/lang/String;)V')
-        def onProviderEnabled(self, provider): pass
+            @java_method('(Ljava/lang/String;)V')
+            def onProviderEnabled(self, provider): pass
 
-        @java_method('(Ljava/lang/String;)V')
-        def onProviderDisabled(self, provider): pass
+            @java_method('(Ljava/lang/String;)V')
+            def onProviderDisabled(self, provider): pass
+    except Exception as e:
+        print(f"GPS Listener Class Error: {e}")
 
 
 class MatrixRainWidget(Widget):
@@ -292,38 +295,49 @@ class AtlasApp(App):
         send_telegram_message("🚀 *Atlas Tracker gestartet* & online.")
         
         if platform == 'android':
-            request_permissions([
-                Permission.ACCESS_FINE_LOCATION, 
-                Permission.ACCESS_COARSE_LOCATION
-            ], self.start_gps_android)
+            # Verzögertes Anfordern der Rechte verhindert Start-Crash
+            Clock.schedule_once(self.init_android_gps, 1.0)
         else:
             self.start_gps_desktop()
 
-    def start_gps_android(self, permissions, grants):
-        if all(grants):
-            try:
-                PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                Context = autoclass('android.content.Context')
-                
-                activity = PythonActivity.mActivity
-                self.location_manager = activity.getSystemService(Context.LOCATION_SERVICE)
-                
-                # Prüfen, ob GPS am Handy aktiviert ist
-                if not self.location_manager.isProviderEnabled('gps'):
-                    self.coords_text = "Bitte GPS am Smartphone aktivieren!"
-                    return
+    def init_android_gps(self, dt):
+        try:
+            from android.permissions import request_permissions, Permission
+            request_permissions(
+                [Permission.ACCESS_FINE_LOCATION, Permission.ACCESS_COARSE_LOCATION],
+                self.on_permissions_result
+            )
+        except Exception as e:
+            self.coords_text = f"Fehler bei Berechtigung: {e}"
 
+    def on_permissions_result(self, permissions, grants):
+        if all(grants):
+            self.start_gps_android()
+        else:
+            self.coords_text = "GPS-Berechtigung verweigert!"
+
+    def start_gps_android(self):
+        try:
+            from jnius import autoclass
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            Context = autoclass('android.content.Context')
+            Looper = autoclass('android.os.Looper')
+
+            activity = PythonActivity.mActivity
+            self.location_manager = activity.getSystemService(Context.LOCATION_SERVICE)
+
+            if not self.location_manager.isProviderEnabled('gps'):
+                self.coords_text = "Bitte GPS am Handy aktivieren!"
+                return
+
+            if GPSListener:
                 self.gps_listener = GPSListener(self.update_gps_ui)
-                
-                Looper = autoclass('android.os.Looper')
                 self.location_manager.requestLocationUpdates(
                     'gps', 1000, 0.0, self.gps_listener, Looper.getMainLooper()
                 )
-                self.coords_text = "Warte auf GPS-Signal..."
-            except Exception as e:
-                self.coords_text = f"GPS-Fehler: {str(e)}"
-        else:
-            self.coords_text = "GPS-Berechtigung verweigert!"
+                self.coords_text = "Warte auf GPS-Fix..."
+        except Exception as e:
+            self.coords_text = f"GPS-Startfehler: {str(e)}"
 
     def start_gps_desktop(self):
         self.coords_text = "Desktop-Modus (Simulation)"
@@ -336,7 +350,6 @@ class AtlasApp(App):
 
         if self.tracking_active and self.last_lat is not None and self.last_lon is not None:
             delta_km = calculate_distance(self.last_lat, self.last_lon, lat, lon)
-            # Zählt ab 2 Meter Bewegung
             if delta_km > 0.002:
                 self.total_distance_km += delta_km
                 self.distance_text = f"Strecke: {self.total_distance_km:.1f} km"
@@ -397,7 +410,7 @@ class AtlasApp(App):
             "📋 *ATLAS TAGESBERICHT*\n"
             "----------------------------\n"
             f"⏱ *Gesamtlenkzeit:* `{time_formatted}`\n"
-            f"流域 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
+            f"🛣 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
             f"🔋 *Restakku:* `{int(self.battery_level)} % (~{remaining_km} km)`\n"
             f"⚡ *Durchschnitt:* `{avg_speed:.1f} km/h`\n"
             f"⏳ *Restkontingent:* `{remaining_quota:.1f} Std.`\n"
