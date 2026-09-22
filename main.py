@@ -80,13 +80,13 @@ if platform == 'android':
                 print(f"Error registering GPS: {e}")
 
 
-# --- MATRIX REGEN BACKGROUND ---
+# --- GRÖSSERER MATRIX REGEN BACKGROUND ---
 class MatrixRainWidget(Widget):
     def __init__(self, **kwargs):
         super(MatrixRainWidget, self).__init__(**kwargs)
         self.columns = []
         self.bind(size=self._setup_matrix, pos=self._setup_matrix)
-        Clock.schedule_interval(self.update_matrix, 0.05)
+        Clock.schedule_interval(self.update_matrix, 0.04)
 
     def _setup_matrix(self, *args):
         self.canvas.before.clear()
@@ -94,7 +94,8 @@ class MatrixRainWidget(Widget):
             Color(0, 0, 0, 1)
             Rectangle(pos=self.pos, size=self.size)
 
-        col_width = 20
+        # Spaltenbreite deutlich vergrößert
+        col_width = 30
         num_cols = int(self.width / col_width) + 1 if self.width > 0 else 10
         self.columns = []
 
@@ -102,8 +103,8 @@ class MatrixRainWidget(Widget):
             self.columns.append({
                 'x': self.x + (i * col_width),
                 'y': random.randint(0, int(self.height) if self.height > 0 else 800),
-                'speed': random.randint(5, 15),
-                'length': random.randint(5, 15)
+                'speed': random.randint(8, 22),
+                'length': random.randint(6, 12)
             })
 
     def update_matrix(self, dt):
@@ -113,13 +114,14 @@ class MatrixRainWidget(Widget):
                 col['y'] -= col['speed']
                 if col['y'] < 0:
                     col['y'] = self.height + random.randint(10, 100)
-                    col['speed'] = random.randint(5, 15)
+                    col['speed'] = random.randint(8, 22)
 
-                Color(0, 1, 0, 0.35)
+                Color(0, 1, 0, 0.45)
                 for j in range(col['length']):
-                    py = col['y'] + (j * 15)
+                    py = col['y'] + (j * 25)  # Größerer Abstand zwischen Segmenten
                     if 0 <= py <= self.height:
-                        Rectangle(pos=(col['x'], py), size=(4, 10))
+                        # Größere Rechtecke (10px breit, 22px hoch)
+                        Rectangle(pos=(col['x'], py), size=(10, 22))
 
 
 class MainScreen(FloatLayout):
@@ -132,7 +134,7 @@ KV = '''
     MatrixRainWidget:
         id: matrix_bg
 
-    # CLEAN HAUPTDISPLAY (Nur reine Werte auf dem Schirm)
+    # CLEAN HAUPTDISPLAY
     BoxLayout:
         orientation: 'vertical'
         size_hint: (0.9, 0.6)
@@ -191,27 +193,27 @@ KV = '''
         pos_hint: {'center_x': 0.5, 'y': 0.04}
         on_press: app.toggle_tracking()
 
-    # MENÜ BUTTON UNTEN RECHTS (Das einzige Steuer-Element)
+    # MENÜ BUTTON UNTEN RECHTS (Wird bei aktiver Fahrt versteckt)
     Button:
-        text: "≡"
+        text: "≡" if not app.tracking_active else ""
         font_size: '24sp'
         bold: True
         background_normal: ''
-        background_color: (0, 0, 0, 0.6)
+        background_color: (0, 0, 0, 0.6) if not app.tracking_active else (0, 0, 0, 0)
         color: (0, 1, 0, 1)
         size_hint: (None, None)
-        size: (50, 50)
+        size: (50, 50) if not app.tracking_active else (0, 0)
         pos_hint: {'right': 0.95, 'y': 0.04}
-        on_press: app.toggle_menu()
+        on_press: app.toggle_menu() if not app.tracking_active else None
 
-    # OVERLAY MENÜ (Verschwindet vollständig, wenn geschlossen)
+    # OVERLAY MENÜ
     BoxLayout:
         id: menu_overlay
         orientation: 'vertical'
-        size_hint: (0.88, 0.65)
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5} if app.menu_open else {'center_x': -2, 'center_y': -2}
+        size_hint: (0.88, 0.7)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5} if app.menu_open and not app.tracking_active else {'center_x': -2, 'center_y': -2}
         padding: 15
-        spacing: 12
+        spacing: 10
         canvas.before:
             Color:
                 rgba: 0, 0, 0, 0.95
@@ -242,6 +244,19 @@ KV = '''
             orientation: 'horizontal'
             spacing: 10
             Label:
+                text: "Reichweite bei 100% (km):"
+                font_size: '13sp'
+            TextInput:
+                id: max_range_input
+                text: str(int(app.max_range_km))
+                input_filter: 'int'
+                multiline: False
+                size_hint_x: 0.4
+
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: 10
+            Label:
                 text: "Tageskontingent (Std):"
                 font_size: '14sp'
             TextInput:
@@ -252,9 +267,9 @@ KV = '''
                 size_hint_x: 0.4
 
         Button:
-            text: "Werte Speichern & Menü Schließen"
+            text: "Speichern & Menü Schließen"
             background_color: (0, 0.6, 0, 0.9)
-            on_press: app.save_settings(battery_input.text, quota_input.text)
+            on_press: app.save_settings(battery_input.text, max_range_input.text, quota_input.text)
 
         Button:
             text: "Telegram Test-Senden"
@@ -270,7 +285,7 @@ KV = '''
 
 class AtlasApp(App):
     speed_text = StringProperty("0 km/h")
-    battery_text = StringProperty("Akku: 100 %")
+    battery_text = StringProperty("Akku: 100 % (~450 km)")
     distance_text = StringProperty("Strecke: 0.0 km")
     coords_text = StringProperty("Lat: -- | Lon: --")
     gps_status = StringProperty("GPS wird initialisiert...")
@@ -282,6 +297,7 @@ class AtlasApp(App):
     menu_open = BooleanProperty(False)
 
     battery_level = NumericProperty(100.0)
+    max_range_km = NumericProperty(450.0)
     daily_quota_hours = NumericProperty(9)
     drive_seconds = NumericProperty(0)
     total_distance_km = NumericProperty(0.0)
@@ -290,7 +306,6 @@ class AtlasApp(App):
     last_lon = None
     current_speed = 0.0
 
-    # Stau-Hotspot auf der Route (Demo-Koordinaten)
     known_traffic_jam_point = (47.7320, 8.8510)  
 
     def build(self):
@@ -329,14 +344,16 @@ class AtlasApp(App):
 
         if self.tracking_active and self.last_lat is not None and self.last_lon is not None:
             delta_km = calculate_distance(self.last_lat, self.last_lon, lat, lon)
-            if delta_km > 0.005:  # Jitter-Filter (> 5m Bewegung)
+            if delta_km > 0.005:
                 self.total_distance_km += delta_km
                 self.distance_text = f"Strecke: {self.total_distance_km:.1f} km"
 
-                # Akku-Minderung berechnen (ca. 0,22% pro km Verbrauch)
-                consumption = delta_km * 0.22
-                self.battery_level = max(0.0, self.battery_level - consumption)
-                self.battery_text = f"Akku: {int(self.battery_level)} %"
+                # Akku-Minderung basierend auf gewählter Max-Reichweite berechnen
+                if self.max_range_km > 0:
+                    consumption_percent = (delta_km / self.max_range_km) * 100.0
+                    self.battery_level = max(0.0, self.battery_level - consumption_percent)
+                
+                self.update_battery_display()
 
         self.last_lat = lat
         self.last_lon = lon
@@ -345,7 +362,12 @@ class AtlasApp(App):
 
         if speed > 5 and not self.tracking_active:
             self.tracking_active = True
+            self.menu_open = False  # Menü schließen
             send_telegram_message(f"🚨 *Fahrt automatisch gestartet!* Geschwindigkeit: {int(speed)} km/h")
+
+    def update_battery_display(self):
+        remaining_km = int((self.battery_level / 100.0) * self.max_range_km)
+        self.battery_text = f"Akku: {int(self.battery_level)} % (~{remaining_km} km)"
 
     def check_traffic_ahead(self, lat, lon):
         jam_lat, jam_lon = self.known_traffic_jam_point
@@ -366,6 +388,7 @@ class AtlasApp(App):
             self.send_daily_report()
         else:
             self.tracking_active = True
+            self.menu_open = False  # Garantiert, dass das Menü ausgeblendet ist
             send_telegram_message("▶️ *Lenkzeit-Erfassung manuell gestartet.*")
 
     def send_daily_report(self):
@@ -376,13 +399,14 @@ class AtlasApp(App):
 
         avg_speed = (self.total_distance_km / (self.drive_seconds / 3600)) if self.drive_seconds > 0 else 0.0
         remaining_quota = max(0.0, self.daily_quota_hours - (self.drive_seconds / 3600))
+        remaining_km = int((self.battery_level / 100.0) * self.max_range_km)
 
         report_msg = (
             "📋 *ATLAS TAGESBERICHT*\n"
             "----------------------------\n"
             f"⏱ *Gesamtlenkzeit:* `{time_formatted}`\n"
             f"🛣 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
-            f"🔋 *Restakku:* `{int(self.battery_level)} %`\n"
+            f"🔋 *Restakku:* `{int(self.battery_level)} % (~{remaining_km} km)`\n"
             f"⚡ *Durchschnitt:* `{avg_speed:.1f} km/h`\n"
             f"⏳ *Restkontingent:* `{remaining_quota:.1f} Std.`\n"
             "----------------------------\n"
@@ -391,18 +415,21 @@ class AtlasApp(App):
         send_telegram_message(report_msg)
 
     def toggle_menu(self):
-        self.menu_open = not self.menu_open
+        if not self.tracking_active:
+            self.menu_open = not self.menu_open
 
-    def save_settings(self, bat_val, quota_val):
+    def save_settings(self, bat_val, max_range_val, quota_val):
         try:
             if bat_val:
                 self.battery_level = float(bat_val)
-                self.battery_text = f"Akku: {int(self.battery_level)} %"
+            if max_range_val:
+                self.max_range_km = float(max_range_val)
             if quota_val:
                 self.daily_quota_hours = int(quota_val)
 
-            send_telegram_message(f"⚙️ *Einstellungen angepasst:*\nAkku: `{int(self.battery_level)} %` | Kontingent: `{self.daily_quota_hours} Std.`")
-            self.toggle_menu()  # Menü nach dem Speichern automatisch schließen
+            self.update_battery_display()
+            send_telegram_message(f"⚙️ *Einstellungen angepasst:*\nAkku: `{int(self.battery_level)} %` | Max: `{int(self.max_range_km)} km` | Kontingent: `{self.daily_quota_hours} Std.`")
+            self.menu_open = False
         except ValueError:
             pass
 
