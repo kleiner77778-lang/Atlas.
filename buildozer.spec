@@ -19,11 +19,11 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
 # (list) Application requirements
-# WICHTIG: cryptography, openssl und certifi sind zwingend fuer Telegram HTTPS
-requirements = python3,kivy==2.2.1,requests,urllib3,openssl,certifi,cryptography,pyjnius
+# OHNE cryptography! requests + certifi + openssl reichen vollkommen für Telegram HTTPS aus.
+requirements = python3,kivy==2.2.1,requests,urllib3,openssl,certifi,pyjnius
 
 # (str) Custom application icon
-Fallback: Wenn icon.png im Ordner fehlt, diese Zeile mit # auskommentieren!
+Falls du kein icon.png im Ordner hast, die folgende Zeile mit # auskommentieren!
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
@@ -39,7 +39,7 @@ android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
 android.api = 33
 
 # (int) Minimum API required
-android.minapi = 24
+android.minapi = 21
 
 # (str) Android NDK version
 android.ndk = 25b
@@ -47,12 +47,12 @@ android.ndk = 25b
 # (bool) Accept SDK license automatically
 android.accept_sdk_license = True
 
-# (list) The Android archs to build for (arm64-v8a ist perfekt fuer moderna Smartphones wie S22+)
+# (list) The Android archs to build for
 android.archs = arm64-v8a
 
 [buildozer]
 
-# (int) Log level (2 = debug info)
+# (int) Log level
 log_level = 2
 
 # (int) Display warning if buildozer is run as root
