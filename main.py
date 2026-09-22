@@ -41,6 +41,24 @@ if platform == 'android':
         def onProviderDisabled(self, provider):
             pass
 
+    class GPSRunnable(PythonJavaClass):
+        __javainterfaces__ = ['java/lang/Runnable']
+        __javacontext__ = 'app'
+
+        def __init__(self, lm, listener):
+            super(GPSRunnable, self).__init__()
+            self.lm = lm
+            self.listener = listener
+
+        @java_method('()V')
+        def run(self):
+            try:
+                self.lm.requestLocationUpdates(
+                    'gps', 1000, 1, self.listener
+                )
+            except Exception as e:
+                print(f"Error registering GPS: {e}")
+
 
 # --- MATRIX REGEN BACKGROUND ---
 class MatrixRainWidget(Widget):
@@ -96,7 +114,7 @@ KV = '''
     MatrixRainWidget:
         id: matrix_bg
 
-    # ZENTRALER BILDERBEREICH (FREI UND CLEAN)
+    # ZENTRALER BILDERBEREICH
     BoxLayout:
         orientation: 'vertical'
         size_hint: (0.9, 0.6)
@@ -136,7 +154,7 @@ KV = '''
             size_hint_y: None
             height: 30
 
-    # MENÜ BUTTON UNTEN RECHTS (DEZENT & PLATZSPAREND)
+    # MENÜ BUTTON UNTEN RECHTS
     Button:
         text: "≡"
         font_size: '24sp'
@@ -162,7 +180,6 @@ class AtlasApp(App):
         return MainScreen()
 
     def on_start(self):
-        # Verzögerter GPS-Start um 1 Sekunde für sauberen App-Launch
         Clock.schedule_once(self.start_gps, 1)
 
     def start_gps(self, dt):
@@ -170,15 +187,15 @@ class AtlasApp(App):
             try:
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Context = autoclass('android.content.Context')
-                activity = PythonActivity.mActivity
 
+                activity = PythonActivity.mActivity
                 self.location_manager = activity.getSystemService(Context.LOCATION_SERVICE)
                 self.gps_listener = GPSListener(self.update_gps_ui)
 
-                # GPS & Netzwerk-Provider anfordern
-                self.location_manager.requestLocationUpdates(
-                    'gps', 1000, 1, self.gps_listener
-                )
+                # Execute GPS updates inside Android's UI thread
+                runnable = GPSRunnable(self.location_manager, self.gps_listener)
+                activity.runOnUiThread(runnable)
+
                 self.gps_status = "GPS aktiv"
             except Exception as e:
                 self.gps_status = f"GPS-Fehler: {str(e)}"
