@@ -18,10 +18,10 @@ source.include_exts = py,png,jpg,kv,atlas,json
 # (str) Application versioning
 version = 1.0.0
 
-# Minimal-Requirements (kein kaputtes OpenSSL/requests-C-Compiling)
+# Abgestimmte Requirements: Keine externen C-Bibliotheken
 requirements = python3,kivy==2.2.1,pyjnius
 
-# DEIN APP ICON (Stelle sicher, dass die Datei genau icon.png heißt)
+# Icon-Einbindung (muss als icon.png im Ordner liegen)
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
