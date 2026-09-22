@@ -49,7 +49,7 @@ android.accept_sdk_license = True
 android.archs = arm64-v8a
 
 # Entwickler-Branch für Python-for-Android (behebt NDK/Cython-Bugs)
-p4a.branch = develop
+p4a.branch = master
 
 [buildozer]
 
