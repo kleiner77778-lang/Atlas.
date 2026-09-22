@@ -1,6 +1,7 @@
 import os
 import math
 import random
+import threading
 import requests
 from kivy.app import App
 from kivy.clock import Clock
@@ -15,13 +16,18 @@ from kivy.utils import platform
 TELEGRAM_BOT_TOKEN = "8413301731:AAHRM32xA2CkAkrrcf85sqYDR88YK14k3bs"
 TELEGRAM_CHAT_ID = "8941361378"
 
+
 def send_telegram_message(message):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    try:
-        requests.post(url, json=payload, timeout=5)
-    except Exception as e:
-        print(f"Telegram Send Error: {e}")
+    """Sendet Telegram-Nachrichten asynchronously im Hintergrund-Thread, um UI-Crashes zu vermeiden."""
+    def _send():
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
+        try:
+            requests.post(url, json=payload, timeout=5)
+        except Exception as e:
+            print(f"Telegram Send Error: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -73,7 +79,7 @@ class MatrixRainWidget(Widget):
         super(MatrixRainWidget, self).__init__(**kwargs)
         self.columns = []
         self.bind(size=self._setup_matrix, pos=self._setup_matrix)
-        Clock.schedule_interval(self.update_matrix, 0.04)
+        Clock.schedule_interval(self.update_matrix, 0.05)
 
     def _setup_matrix(self, *args):
         self.canvas.before.clear()
@@ -267,6 +273,7 @@ class AtlasApp(App):
     speed_text = StringProperty("0 km/h")
     battery_text = StringProperty("Akku: 100 % (~450 km)")
     distance_text = StringProperty("Strecke: 0.0 km")
+    drive_time_text = StringProperty("Lenkzeit: 00:00:00")
     coords_text = StringProperty("GPS wird initialisiert...")
     traffic_warning = StringProperty("")
 
@@ -287,16 +294,14 @@ class AtlasApp(App):
     known_traffic_jam_point = (47.7320, 8.8510)  
 
     def build(self):
-        Builder.load_string(KV)
-        return MainScreen()
+        return Builder.load_string(KV)
 
     def on_start(self):
         Clock.schedule_interval(self.update_timers, 1)
         send_telegram_message("🚀 *Atlas Tracker gestartet* & online.")
         
         if platform == 'android':
-            # Verzögertes Anfordern der Rechte verhindert Start-Crash
-            Clock.schedule_once(self.init_android_gps, 1.0)
+            Clock.schedule_once(self.init_android_gps, 1.5)
         else:
             self.start_gps_desktop()
 
