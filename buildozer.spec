@@ -19,14 +19,15 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
 # (list) Application requirements
-WICHTIG: requests + openssl + urllib3 sichern den Telegram-HTTPs-Aufruf ab
-requirements = python3,kivy,requests,urllib3,openssl,certifi,pyjnius
+# WICHTIG: cryptography, openssl und certifi sind zwingend fuer Telegram HTTPS
+requirements = python3,kivy==2.2.1,requests,urllib3,openssl,certifi,cryptography,pyjnius
 
-# (str) Custom application icon (falls vorhanden, sonst Zeile mit # auskommentieren)
+# (str) Custom application icon
+Fallback: Wenn icon.png im Ordner fehlt, diese Zeile mit # auskommentieren!
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
-orientation = portrait, landscape
+orientation = portrait
 
 # (bool) Indicate if the application should be fullscreen
 fullscreen = 1
@@ -38,7 +39,7 @@ android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
 android.api = 33
 
 # (int) Minimum API required
-android.minapi = 21
+android.minapi = 24
 
 # (str) Android NDK version
 android.ndk = 25b
@@ -46,12 +47,12 @@ android.ndk = 25b
 # (bool) Accept SDK license automatically
 android.accept_sdk_license = True
 
-# (list) The Android archs to build for
+# (list) The Android archs to build for (arm64-v8a ist perfekt fuer moderna Smartphones wie S22+)
 android.archs = arm64-v8a
 
 [buildozer]
 
-# (int) Log level
+# (int) Log level (2 = debug info)
 log_level = 2
 
 # (int) Display warning if buildozer is run as root
