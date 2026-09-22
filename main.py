@@ -24,10 +24,9 @@ def send_telegram_message(message):
         print(f"Telegram Send Error: {e}")
 
 
-# --- GEODATEN / ENTFERNUNGSBERECHNUNG (HAVERSINE) ---
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Berechnet die Distanz zwischen zwei GPS-Punkten in Kilometern"""
-    R = 6371.0  # Erdradius in km
+    R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
@@ -52,7 +51,7 @@ if platform == 'android':
             if location:
                 lat = location.getLatitude()
                 lon = location.getLongitude()
-                speed = location.getSpeed() * 3.6  # m/s in km/h
+                speed = location.getSpeed() * 3.6
                 self.callback(lat, lon, speed)
 
         @java_method('(Ljava/lang/String;ILandroid/os/Bundle;)V')
@@ -133,12 +132,12 @@ KV = '''
     MatrixRainWidget:
         id: matrix_bg
 
-    # ZENTRALES HAUPTDISPLAY
+    # CLEAN HAUPTDISPLAY (Nur reine Werte auf dem Schirm)
     BoxLayout:
         orientation: 'vertical'
-        size_hint: (0.9, 0.55)
+        size_hint: (0.9, 0.6)
         pos_hint: {'center_x': 0.5, 'center_y': 0.6}
-        spacing: 8
+        spacing: 10
 
         Label:
             text: "ATLAS TRACKER"
@@ -154,9 +153,15 @@ KV = '''
 
         Label:
             text: app.speed_text
-            font_size: '58sp'
+            font_size: '64sp'
             bold: True
             color: (1, 1, 1, 1)
+
+        Label:
+            text: app.battery_text
+            font_size: '22sp'
+            bold: True
+            color: (0.2, 0.9, 0.3, 1) if app.battery_level > 20 else (1, 0.2, 0.2, 1)
 
         Label:
             text: app.drive_time_text
@@ -170,14 +175,9 @@ KV = '''
             color: (0.8, 0.8, 0.8, 1)
 
         Label:
-            text: app.gps_status
-            font_size: '12sp'
-            color: (1, 0.3, 0.3, 1) if "Fehler" in app.gps_status else (0, 0.8, 0, 1)
-
-        Label:
             text: app.coords_text
-            font_size: '13sp'
-            color: (0.6, 0.6, 0.6, 1)
+            font_size: '12sp'
+            color: (0.5, 0.5, 0.5, 1)
 
     # START / STOPP BUTTON UNTEN MITTIG
     Button:
@@ -191,7 +191,7 @@ KV = '''
         pos_hint: {'center_x': 0.5, 'y': 0.04}
         on_press: app.toggle_tracking()
 
-    # MENÜ BUTTON UNTEN RECHTS
+    # MENÜ BUTTON UNTEN RECHTS (Das einzige Steuer-Element)
     Button:
         text: "≡"
         font_size: '24sp'
@@ -204,29 +204,43 @@ KV = '''
         pos_hint: {'right': 0.95, 'y': 0.04}
         on_press: app.toggle_menu()
 
-    # OVERLAY MENÜ
+    # OVERLAY MENÜ (Verschwindet vollständig, wenn geschlossen)
     BoxLayout:
         id: menu_overlay
         orientation: 'vertical'
-        size_hint: (0.85, 0.55)
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5} if app.menu_open else {'center_x': -1, 'center_y': -1}
+        size_hint: (0.88, 0.65)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5} if app.menu_open else {'center_x': -2, 'center_y': -2}
         padding: 15
-        spacing: 10
+        spacing: 12
         canvas.before:
             Color:
-                rgba: 0, 0, 0, 0.92
+                rgba: 0, 0, 0, 0.95
             Rectangle:
                 pos: self.pos
                 size: self.size
 
         Label:
-            text: "EINSTELLUNGEN & KONTINGENT"
+            text: "EINSTELLUNGEN"
             font_size: '18sp'
             bold: True
             color: (0, 1, 0, 1)
 
         BoxLayout:
             orientation: 'horizontal'
+            spacing: 10
+            Label:
+                text: "Akku Stand (%):"
+                font_size: '14sp'
+            TextInput:
+                id: battery_input
+                text: str(int(app.battery_level))
+                input_filter: 'int'
+                multiline: False
+                size_hint_x: 0.4
+
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: 10
             Label:
                 text: "Tageskontingent (Std):"
                 font_size: '14sp'
@@ -235,12 +249,12 @@ KV = '''
                 text: str(app.daily_quota_hours)
                 input_filter: 'int'
                 multiline: False
-                size_hint_x: 0.3
+                size_hint_x: 0.4
 
         Button:
-            text: "Kontingent Speichern"
-            background_color: (0, 0.5, 0, 0.8)
-            on_press: app.set_quota(quota_input.text)
+            text: "Werte Speichern & Menü Schließen"
+            background_color: (0, 0.6, 0, 0.9)
+            on_press: app.save_settings(battery_input.text, quota_input.text)
 
         Button:
             text: "Telegram Test-Senden"
@@ -256,6 +270,7 @@ KV = '''
 
 class AtlasApp(App):
     speed_text = StringProperty("0 km/h")
+    battery_text = StringProperty("Akku: 100 %")
     distance_text = StringProperty("Strecke: 0.0 km")
     coords_text = StringProperty("Lat: -- | Lon: --")
     gps_status = StringProperty("GPS wird initialisiert...")
@@ -266,6 +281,7 @@ class AtlasApp(App):
     traffic_alert_active = BooleanProperty(False)
     menu_open = BooleanProperty(False)
 
+    battery_level = NumericProperty(100.0)
     daily_quota_hours = NumericProperty(9)
     drive_seconds = NumericProperty(0)
     total_distance_km = NumericProperty(0.0)
@@ -274,7 +290,7 @@ class AtlasApp(App):
     last_lon = None
     current_speed = 0.0
 
-    # Stau-Hotspot auf der Strecke (Demo GPS-Koordinate)
+    # Stau-Hotspot auf der Route (Demo-Koordinaten)
     known_traffic_jam_point = (47.7320, 8.8510)  
 
     def build(self):
@@ -284,7 +300,6 @@ class AtlasApp(App):
     def on_start(self):
         Clock.schedule_once(self.start_gps, 1)
         Clock.schedule_interval(self.update_timers, 1)
-        # Sende Start-Benachrichtigung beim App-Öffnen
         send_telegram_message("🚀 *Atlas Tracker gestartet* & online.")
 
     def start_gps(self, dt):
@@ -311,13 +326,17 @@ class AtlasApp(App):
         self.current_speed = speed
         self.speed_text = f"{int(speed)} km/h"
         self.coords_text = f"Lat: {lat:.4f} | Lon: {lon:.4f}"
-        self.gps_status = "GPS Empfang OK"
 
         if self.tracking_active and self.last_lat is not None and self.last_lon is not None:
             delta_km = calculate_distance(self.last_lat, self.last_lon, lat, lon)
-            if delta_km > 0.005:
+            if delta_km > 0.005:  # Jitter-Filter (> 5m Bewegung)
                 self.total_distance_km += delta_km
                 self.distance_text = f"Strecke: {self.total_distance_km:.1f} km"
+
+                # Akku-Minderung berechnen (ca. 0,22% pro km Verbrauch)
+                consumption = delta_km * 0.22
+                self.battery_level = max(0.0, self.battery_level - consumption)
+                self.battery_text = f"Akku: {int(self.battery_level)} %"
 
         self.last_lat = lat
         self.last_lon = lon
@@ -363,6 +382,7 @@ class AtlasApp(App):
             "----------------------------\n"
             f"⏱ *Gesamtlenkzeit:* `{time_formatted}`\n"
             f"🛣 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
+            f"🔋 *Restakku:* `{int(self.battery_level)} %`\n"
             f"⚡ *Durchschnitt:* `{avg_speed:.1f} km/h`\n"
             f"⏳ *Restkontingent:* `{remaining_quota:.1f} Std.`\n"
             "----------------------------\n"
@@ -373,11 +393,16 @@ class AtlasApp(App):
     def toggle_menu(self):
         self.menu_open = not self.menu_open
 
-    def set_quota(self, val):
+    def save_settings(self, bat_val, quota_val):
         try:
-            self.daily_quota_hours = int(val)
-            send_telegram_message(f"⚙️ *Neues Tageskontingent:* `{self.daily_quota_hours} Std.`")
-            self.toggle_menu()
+            if bat_val:
+                self.battery_level = float(bat_val)
+                self.battery_text = f"Akku: {int(self.battery_level)} %"
+            if quota_val:
+                self.daily_quota_hours = int(quota_val)
+
+            send_telegram_message(f"⚙️ *Einstellungen angepasst:*\nAkku: `{int(self.battery_level)} %` | Kontingent: `{self.daily_quota_hours} Std.`")
+            self.toggle_menu()  # Menü nach dem Speichern automatisch schließen
         except ValueError:
             pass
 
@@ -393,7 +418,7 @@ class AtlasApp(App):
                 send_telegram_message("⚠️ *WARNUNG:* 4,5 Stunden Lenkzeit erreicht! Bitte Pause einlegen.")
 
     def trigger_telegram_status(self):
-        msg = f"📊 *ATLAS LIVE-STATUS*\nSpeed: `{self.speed_text}`\n`{self.drive_time_text}`\n`{self.distance_text}`\n`{self.coords_text}`"
+        msg = f"📊 *ATLAS LIVE-STATUS*\nSpeed: `{self.speed_text}`\n`{self.battery_text}`\n`{self.drive_time_text}`\n`{self.distance_text}`\n`{self.coords_text}`"
         send_telegram_message(msg)
 
     def _simulate_movement(self, dt):
