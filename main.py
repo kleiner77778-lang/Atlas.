@@ -37,6 +37,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 # --- PYJNIUS GPS IMPLEMENTIERUNG ---
 if platform == 'android':
     from jnius import PythonJavaClass, java_method, autoclass
+    from android.permissions import request_permissions, Permission
 
     class GPSListener(PythonJavaClass):
         __javainterfaces__ = ['android/location/LocationListener']
@@ -51,7 +52,7 @@ if platform == 'android':
             if location:
                 lat = location.getLatitude()
                 lon = location.getLongitude()
-                speed = location.getSpeed() * 3.6
+                speed = location.getSpeed() * 3.6  # m/s in km/h
                 self.callback(lat, lon, speed)
 
         @java_method('(Ljava/lang/String;ILandroid/os/Bundle;)V')
@@ -63,24 +64,7 @@ if platform == 'android':
         @java_method('(Ljava/lang/String;)V')
         def onProviderDisabled(self, provider): pass
 
-    class GPSRunnable(PythonJavaClass):
-        __javainterfaces__ = ['java/lang/Runnable']
-        __javacontext__ = 'app'
 
-        def __init__(self, lm, listener):
-            super(GPSRunnable, self).__init__()
-            self.lm = lm
-            self.listener = listener
-
-        @java_method('()V')
-        def run(self):
-            try:
-                self.lm.requestLocationUpdates('gps', 1000, 1, self.listener)
-            except Exception as e:
-                print(f"Error registering GPS: {e}")
-
-
-# --- GRÖSSERER MATRIX REGEN BACKGROUND ---
 class MatrixRainWidget(Widget):
     def __init__(self, **kwargs):
         super(MatrixRainWidget, self).__init__(**kwargs)
@@ -94,7 +78,6 @@ class MatrixRainWidget(Widget):
             Color(0, 0, 0, 1)
             Rectangle(pos=self.pos, size=self.size)
 
-        # Spaltenbreite deutlich vergrößert
         col_width = 30
         num_cols = int(self.width / col_width) + 1 if self.width > 0 else 10
         self.columns = []
@@ -118,9 +101,8 @@ class MatrixRainWidget(Widget):
 
                 Color(0, 1, 0, 0.45)
                 for j in range(col['length']):
-                    py = col['y'] + (j * 25)  # Größerer Abstand zwischen Segmenten
+                    py = col['y'] + (j * 25)
                     if 0 <= py <= self.height:
-                        # Größere Rechtecke (10px breit, 22px hoch)
                         Rectangle(pos=(col['x'], py), size=(10, 22))
 
 
@@ -128,13 +110,11 @@ class MainScreen(FloatLayout):
     pass
 
 
-# --- KIVY INTERFACE BUILDER ---
 KV = '''
 <MainScreen>:
     MatrixRainWidget:
         id: matrix_bg
 
-    # CLEAN HAUPTDISPLAY
     BoxLayout:
         orientation: 'vertical'
         size_hint: (0.9, 0.6)
@@ -181,7 +161,6 @@ KV = '''
             font_size: '12sp'
             color: (0.5, 0.5, 0.5, 1)
 
-    # START / STOPP BUTTON UNTEN MITTIG
     Button:
         text: "STOPP & BERICHT" if app.tracking_active else "FAHRT STARTEN"
         font_size: '16sp'
@@ -193,7 +172,6 @@ KV = '''
         pos_hint: {'center_x': 0.5, 'y': 0.04}
         on_press: app.toggle_tracking()
 
-    # MENÜ BUTTON UNTEN RECHTS (Wird bei aktiver Fahrt versteckt)
     Button:
         text: "≡" if not app.tracking_active else ""
         font_size: '24sp'
@@ -206,7 +184,6 @@ KV = '''
         pos_hint: {'right': 0.95, 'y': 0.04}
         on_press: app.toggle_menu() if not app.tracking_active else None
 
-    # OVERLAY MENÜ
     BoxLayout:
         id: menu_overlay
         orientation: 'vertical'
@@ -287,9 +264,7 @@ class AtlasApp(App):
     speed_text = StringProperty("0 km/h")
     battery_text = StringProperty("Akku: 100 % (~450 km)")
     distance_text = StringProperty("Strecke: 0.0 km")
-    coords_text = StringProperty("Lat: -- | Lon: --")
-    gps_status = StringProperty("GPS wird initialisiert...")
-    drive_time_text = StringProperty("Lenkzeit: 00:00:00")
+    coords_text = StringProperty("GPS wird initialisiert...")
     traffic_warning = StringProperty("")
 
     tracking_active = BooleanProperty(False)
@@ -313,29 +288,46 @@ class AtlasApp(App):
         return MainScreen()
 
     def on_start(self):
-        Clock.schedule_once(self.start_gps, 1)
         Clock.schedule_interval(self.update_timers, 1)
         send_telegram_message("🚀 *Atlas Tracker gestartet* & online.")
-
-    def start_gps(self, dt):
+        
         if platform == 'android':
+            request_permissions([
+                Permission.ACCESS_FINE_LOCATION, 
+                Permission.ACCESS_COARSE_LOCATION
+            ], self.start_gps_android)
+        else:
+            self.start_gps_desktop()
+
+    def start_gps_android(self, permissions, grants):
+        if all(grants):
             try:
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Context = autoclass('android.content.Context')
-
+                
                 activity = PythonActivity.mActivity
                 self.location_manager = activity.getSystemService(Context.LOCATION_SERVICE)
+                
+                # Prüfen, ob GPS am Handy aktiviert ist
+                if not self.location_manager.isProviderEnabled('gps'):
+                    self.coords_text = "Bitte GPS am Smartphone aktivieren!"
+                    return
+
                 self.gps_listener = GPSListener(self.update_gps_ui)
-
-                runnable = GPSRunnable(self.location_manager, self.gps_listener)
-                activity.runOnUiThread(runnable)
-
-                self.gps_status = "GPS aktiv"
+                
+                Looper = autoclass('android.os.Looper')
+                self.location_manager.requestLocationUpdates(
+                    'gps', 1000, 0.0, self.gps_listener, Looper.getMainLooper()
+                )
+                self.coords_text = "Warte auf GPS-Signal..."
             except Exception as e:
-                self.gps_status = f"GPS-Fehler: {str(e)}"
+                self.coords_text = f"GPS-Fehler: {str(e)}"
         else:
-            self.gps_status = "Desktop-Modus (Simulation)"
-            Clock.schedule_interval(self._simulate_movement, 2)
+            self.coords_text = "GPS-Berechtigung verweigert!"
+
+    def start_gps_desktop(self):
+        self.coords_text = "Desktop-Modus (Simulation)"
+        Clock.schedule_interval(self._simulate_movement, 2)
 
     def update_gps_ui(self, lat, lon, speed):
         self.current_speed = speed
@@ -344,11 +336,11 @@ class AtlasApp(App):
 
         if self.tracking_active and self.last_lat is not None and self.last_lon is not None:
             delta_km = calculate_distance(self.last_lat, self.last_lon, lat, lon)
-            if delta_km > 0.005:
+            # Zählt ab 2 Meter Bewegung
+            if delta_km > 0.002:
                 self.total_distance_km += delta_km
                 self.distance_text = f"Strecke: {self.total_distance_km:.1f} km"
 
-                # Akku-Minderung basierend auf gewählter Max-Reichweite berechnen
                 if self.max_range_km > 0:
                     consumption_percent = (delta_km / self.max_range_km) * 100.0
                     self.battery_level = max(0.0, self.battery_level - consumption_percent)
@@ -362,7 +354,7 @@ class AtlasApp(App):
 
         if speed > 5 and not self.tracking_active:
             self.tracking_active = True
-            self.menu_open = False  # Menü schließen
+            self.menu_open = False
             send_telegram_message(f"🚨 *Fahrt automatisch gestartet!* Geschwindigkeit: {int(speed)} km/h")
 
     def update_battery_display(self):
@@ -388,7 +380,7 @@ class AtlasApp(App):
             self.send_daily_report()
         else:
             self.tracking_active = True
-            self.menu_open = False  # Garantiert, dass das Menü ausgeblendet ist
+            self.menu_open = False
             send_telegram_message("▶️ *Lenkzeit-Erfassung manuell gestartet.*")
 
     def send_daily_report(self):
@@ -405,7 +397,7 @@ class AtlasApp(App):
             "📋 *ATLAS TAGESBERICHT*\n"
             "----------------------------\n"
             f"⏱ *Gesamtlenkzeit:* `{time_formatted}`\n"
-            f"🛣 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
+            f"流域 *Gefahrene Strecke:* `{self.total_distance_km:.2f} km`\n"
             f"🔋 *Restakku:* `{int(self.battery_level)} % (~{remaining_km} km)`\n"
             f"⚡ *Durchschnitt:* `{avg_speed:.1f} km/h`\n"
             f"⏳ *Restkontingent:* `{remaining_quota:.1f} Std.`\n"
