@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
 # Schlanke Requirements ohne native C-Erweiterungen (requests entfernt!)
-requirements = python3,kivy==2.2.1,
+requirements = python3,kivy==2.2.1
 
 # Icon (Auskommentiert lassen oder sicherstellen, dass icon.png existiert)
 icon.filename = %(source.dir)s/icon.png
