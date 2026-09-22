@@ -18,12 +18,10 @@ source.include_exts = py,png,jpg,kv,atlas,json
 # (str) Application versioning
 version = 1.0.0
 
-# (list) Application requirements
-# OHNE cryptography! requests + certifi + openssl reichen vollkommen für Telegram HTTPS aus.
-requirements = python3,kivy==2.2.1,requests,urllib3,openssl,certifi,pyjnius
+# Minimal-Requirements (kein kaputtes OpenSSL/requests-C-Compiling)
+requirements = python3,kivy==2.2.1,pyjnius
 
-# (str) Custom application icon
-Falls du kein icon.png im Ordner hast, die folgende Zeile mit # auskommentieren!
+# DEIN APP ICON (Stelle sicher, dass die Datei genau icon.png heißt)
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
