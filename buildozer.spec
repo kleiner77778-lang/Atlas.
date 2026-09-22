@@ -18,10 +18,10 @@ source.include_exts = py,png,jpg,kv,atlas,json
 # (str) Application versioning
 version = 1.0.0
 
-# Abgestimmte Requirements: Keine externen C-Bibliotheken
+# Schlanke Requirements ohne native C-Erweiterungen
 requirements = python3,kivy==2.2.1,pyjnius
 
-# Icon-Einbindung (muss als icon.png im Ordner liegen)
+# Icon (Auskommentiert lassen, falls icon.png nicht im Ordner liegt!)
 icon.filename = %(source.dir)s/icon.png
 
 # (str) Supported orientations
@@ -47,6 +47,9 @@ android.accept_sdk_license = True
 
 # (list) The Android archs to build for
 android.archs = arm64-v8a
+
+# WICHTIG: Entwickler-Branch für Python-for-Android erzwingen (behebt NDK/Cython-Bugs)
+p4a.branch = develop
 
 [buildozer]
 
