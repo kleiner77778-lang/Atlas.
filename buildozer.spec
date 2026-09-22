@@ -20,7 +20,7 @@ version = 1.0.0
 
 # (list) Application requirements
 WICHTIG: requests + openssl + urllib3 sichern den Telegram-HTTPs-Aufruf ab
-requirements = python3,kivy,plyer,requests,urllib3,certifi,idna,charset-normalizer,openssl
+requirements = python3,kivy,requests,urllib3,openssl,certifi,pyjnius
 
 # (str) Custom application icon (falls vorhanden, sonst Zeile mit # auskommentieren)
 icon.filename = %(source.dir)s/icon.png
@@ -32,7 +32,7 @@ orientation = portrait, landscape
 fullscreen = 1
 
 # (list) Permissions
-android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, FOREGROUND_SERVICE
+android.permissions = INTERNET, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
 
 # (int) Target Android API
 android.api = 33
